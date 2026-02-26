@@ -10,6 +10,17 @@ namespace EpsilonCombatEngine
 	/// <typeparam name="T">Number type to use</typeparam>
 	public class Counter<T> where T : INumber<T>
     {
+		public Counter() { 
+			Value = T.Zero;
+			RateOfChange = T.Zero;
+        }
+		public Counter(T initialValue, T rateOfChange)
+		{
+			Value = initialValue;
+			RateOfChange = rateOfChange;
+        }
 
+        public T Value { get; set; }
+        public T RateOfChange { get; set; }
     }
 }
