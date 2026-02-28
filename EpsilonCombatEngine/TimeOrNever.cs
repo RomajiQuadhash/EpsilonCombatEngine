@@ -11,7 +11,7 @@ namespace EpsilonCombatEngine
 	/// Used to represent when something may happen or if it won't ever happen
 	/// </summary>
 	/// <typeparam name="T">Format of time to use</typeparam>
-	internal class TimeOrNever<T> where T : INumber<T>
+	public class TimeOrNever<T> where T : INumber<T>
 	{
 		public TimeOrNever() => _internalTime = T.Zero;
 
