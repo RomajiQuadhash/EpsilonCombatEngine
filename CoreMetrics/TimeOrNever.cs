@@ -11,7 +11,7 @@ namespace CoreMetrics
 	/// Used to represent when something may happen or if it won't ever happen
 	/// </summary>
 	/// <typeparam name="T">Format of time to use</typeparam>
-	public class TimeOrNever<T> where T : INumber<T>
+	public class TimeOrNever<T> : IComparable<TimeOrNever<T>> where T : INumber<T>
 	{
 		public TimeOrNever() => _internalTime = T.Zero;
 
@@ -41,5 +41,38 @@ namespace CoreMetrics
 				IsNever = false;
 			}
 		}
-	}
+        /// <summary>
+        /// Compares the current instance to another TimeOrNever<T> object and returns an integer indicating their relative
+        /// order. Never values are considered greater than any time value, and two Never values make an invalid comparison.
+        /// </summary>
+        /// <param name="other">The TimeOrNever<T> instance to compare with the current object. Can be null.</param>
+        /// <returns>A negative integer if the current instance precedes the other; zero if they are equal; a positive integer if the
+        /// current instance follows the other.
+		/// If both instances are Never, throws a NeverIsNotATimeException.
+		/// Special values:
+		/// -100 if other is null
+		/// -10 if this is Never and other is not Never
+		/// 10 if this is not Never and other is Never
+		/// </returns>
+        public int CompareTo(TimeOrNever<T>? other)
+		{
+			if (other == null)
+			{
+				return -100;
+			}
+			if (IsNever && other.IsNever)
+			{
+				throw new NeverIsNotATimeException("No ordering between two events that never happen!");
+            }
+            if (IsNever && !other.IsNever)
+			{
+				return 10;
+            }
+			if (!IsNever && other.IsNever)
+			{
+				return -10;
+            }
+            return Time.CompareTo(other.Time);
+        }
+    }
 }
