@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace EpsilonCombatEngine
+namespace CoreMetrics
 {
 	/// <summary>
 	/// This class keeps track of a value that may change over time.

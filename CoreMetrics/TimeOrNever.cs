@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EpsilonCombatEngine
+namespace CoreMetrics
 {
 	/// <summary>
 	/// Used to represent when something may happen or if it won't ever happen

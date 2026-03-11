@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EpsilonCombatEngine
+namespace CoreMetrics
 {
 	/// <summary>
 	/// Exception raised when trying to read the time value of a TimeOrNever when it is currently Never
