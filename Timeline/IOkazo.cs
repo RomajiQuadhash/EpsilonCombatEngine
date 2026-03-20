@@ -22,6 +22,10 @@ namespace Timeline
         /// </summary>
         public TimeOrNever<T> TimeRemaining { get; }
         /// <summary>
+        /// Only matters if TimeRemaining is Never. If true, this event could occur at some point in the future so it should be kept track of, but if false, this event will never occur and can be safely discarded.
+        /// </summary>
+        public bool CouldOccur { get; }
+        /// <summary>
         /// If two events have the same time remaining, this method is used to determine which one should occur first.
         /// </summary>
         /// <param name="other">The other event</param>
