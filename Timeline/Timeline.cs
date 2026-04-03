@@ -140,12 +140,12 @@ namespace Timeline
         }
         #endregion
 
-            #region helpers
-            /// <summary>
-            /// Used with any action that can only be performed during certain phases of the timeline to error check.
-            /// </summary>
-            /// <param name="validPhases">Any collection that can hold phases. Sets are probably fastest.</param>
-            /// <exception cref="InvalidPhaseForActionException"></exception>
+        #region helpers
+        /// <summary>
+        /// Used with any action that can only be performed during certain phases of the timeline to error check.
+        /// </summary>
+        /// <param name="validPhases">Any collection that can hold phases. Sets are probably fastest.</param>
+        /// <exception cref="InvalidPhaseForActionException"></exception>
         protected void PhaseValid(ICollection<TimelinePhase> validPhases)
         {
             if (!validPhases.Contains(Phase))
