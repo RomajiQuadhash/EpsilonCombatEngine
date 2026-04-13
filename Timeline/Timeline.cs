@@ -19,6 +19,12 @@ namespace Timeline
         /// </summary>
         public ISet<IOkazo<T>> PossibleEvents { get; private set; }
         /// <summary>
+
+        /// <summary>
+        /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
+        /// </summary>
+        public event EventHandler<T>? Advance;
+        /// <summary>
         /// Status of the timeline, which determines what happens when Update is called and what actions are allowed. The timeline starts in the Open phase, and must be in the Open phase for events to be added or adjusted. 
         /// Calling Update will move the timeline through the phases in the order they are defined, with some exceptions for InstantAction phases that can occur multiple times between PostEffect and Display. 
         /// After Display, use "SetOpen" to set the timeline back to the Open phase to prepare for the next update.
@@ -92,16 +98,21 @@ namespace Timeline
                         break;
                     case TimelinePhase.Purged:
                         // Now, sort the events and move to the Sorted phase.
-                        Events.Sort();
+                        Events.Sort(); // This should sort by time remaining since IOkazo<T> implements IComparable and should be compared by time remaining. No events are Never, so there won't be a NeverIsNotATime exception here.
                         Phase = TimelinePhase.Sorted;
                         break;
                     case TimelinePhase.Sorted:
                         // Move time forward so the next event to occur is at time zero, and move to the Zeroed phase.
-                        //TODO: add an event to actually move all the IOkazo<T> in Events forward by the time of the next event
+                        if (Advance == null)
+                        {
+                            throw new InvalidOperationException("IOkazoj need to subscribe to the Advance event. Clearly someone forgot this.");
+                        }
+                        Advance.Invoke(this, Events[0].TimeRemaining.Time); //This can't be never, since we should have purged it.
                         Phase = TimelinePhase.Zeroed;
                         break;
                     case TimelinePhase.Zeroed:
-                        //TODO: Apply the effects...
+                        // Do the first event now that time is at zero, and move to the PostEffect phase to check for any consequences of this event.
+                        Events[0].Trigger();
                         Events.RemoveAt(0);
                         Phase = TimelinePhase.PostEffect;
                         break;
