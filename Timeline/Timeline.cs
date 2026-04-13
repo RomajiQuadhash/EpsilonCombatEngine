@@ -19,6 +19,11 @@ namespace Timeline
         /// </summary>
         public ISet<IOkazo<T>> PossibleEvents { get; private set; }
         /// <summary>
+        /// If an event should occur immediately, this is set to that event so it can be processed in the InstantAction phase. Otherwise, this is null.
+        /// Note that only one event can be processed per InstantAction phase, so this isn't a list.
+        /// This is because one ReactionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
+        /// </summary>
+        public IOkazo<T>? ReactionEvent { get; private set; }
 
         /// <summary>
         /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
@@ -129,7 +134,12 @@ namespace Timeline
                         break;
                     case TimelinePhase.InstantAction:
                         // Do the event that just was added...
-                        //TODO: Actually do that
+                        if (ReactionEvent == null)
+                        {
+                            throw new InvalidOperationException("ReactionEvent should have been set in the InstantActionCheck if we returned true, but it was null. Clearly someone forgot to set it.");
+                        }
+                        ReactionEvent.Trigger();
+                        ReactionEvent = null;
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
                         break;
                     case TimelinePhase.Display:
@@ -180,8 +190,8 @@ namespace Timeline
         }
         private bool InstantActionCheck()
         {
-            //TODO: implement instant action check, which checks if any events in PossibleEvents have become 0 or negative, and if so, moves the earliest of these events to the front of the list in some deterministic order, rewinds time to that new event and returns true. Otherwise, returns false.
-            return false;
+            //TODO: implement instant action check, which checks if any events in PossibleEvents have become 0 or negative, and if so, sets the earliest of these events as the ReactionEvent (using IOkazo deterministic ordering for ties), then returns true. If there are no such events, return false.
+            return ReactionEvent != null;
         }
         #endregion
 
