@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CoreMetrics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -188,10 +189,46 @@ namespace Timeline
             Events.AddRange(promotableEvents);
             return Events.Count!=0;
         }
+        /// <summary>
+        /// Finds if any of the possible events should occur immediately, and if so, sets the ReactionEvent to the earliest of these events, removes it from PossibleEvents, and rewinds time so this event is at time zero.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if there is already a reaction event to process.</exception>
+        /// <returns>True if an action was found and set as the ReactionEvent, false otherwise.</returns>
         private bool InstantActionCheck()
         {
-            //TODO: implement instant action check, which checks if any events in PossibleEvents have become 0 or negative, and if so, sets the earliest of these events as the ReactionEvent (using IOkazo deterministic ordering for ties), then returns true. If there are no such events, return false.
-            return ReactionEvent != null;
+            if (ReactionEvent != null)
+            {
+                throw new InvalidOperationException("There's already a reaction event to process. Don't look for another one.");
+            }
+            // Keep track of the earliest time remaining among the possible events
+            TimeOrNever<T> timeToBeat = new();
+            foreach (IOkazo<T> e in PossibleEvents)
+            {
+                if (e.TimeRemaining.CompareTo(timeToBeat) > 0)
+                {
+                    // If e is later than the timeToBeat, then it is positive, less negative than the current ReactionEvent, or it is never.
+                    continue;
+                }
+                if (ReactionEvent != null && ReactionEvent.CompareTo(e) < 0)
+                {
+                    // If we already have a ReactionEvent and it sorts earlier than e, then we should keep the current ReactionEvent
+                    continue;
+                }
+                timeToBeat = e.TimeRemaining;
+                ReactionEvent = e;
+            }
+            if (ReactionEvent == null)
+            {
+                return false;
+            }
+            // Remove the ReactionEvent from PossibleEvents, since it's now happening.
+            PossibleEvents.Remove(ReactionEvent);
+            // Rewind time so the ReactionEvent is at time zero. (if it's already at time zero, do nothing)
+            if (!T.IsZero(ReactionEvent.TimeRemaining.Time))
+            {
+                Advance?.Invoke(this, ReactionEvent.TimeRemaining.Time);
+            }
+            return true;
         }
         #endregion
 
