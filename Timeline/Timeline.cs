@@ -129,8 +129,42 @@ namespace Timeline
             }
             yield break;
         }
-            //TODO: implement purge logic, which moves any events that are not Never among Events and PossibleEvents to Events, and moves any events that are Never among Events to PossibleEvents. Returns false if there are no events left to process after purging, which would indicate that the battle is over due to no events left.
+        /// <summary>
+        /// Purges events from the timeline, moving promotable events to the main list and handling events that could never occur.
+        /// </summary>
+        /// <returns>True if there are events left to process after purging, false otherwise.</returns>
         private bool Purge() {
+            //First, clean up possible events, and save any to promote to the main list.
+            List<IOkazo<T>> promotableEvents = [];
+            foreach (IOkazo<T> e in PossibleEvents)
+            {
+                if (e.CouldOccur && e.TimeRemaining.IsNever)
+                {
+                    // If the event could occur but is still at Never, keep it in PossibleEvents and move on.
+                    continue;
+                }
+                if (!e.TimeRemaining.IsNever)
+                {
+                    promotableEvents.Add(e);
+                }
+                // Always remove events that couldn't occur or are no longer at never, since they shouldn't be in PossibleEvents.
+                PossibleEvents.Remove(e);
+            }
+            // Now, add move any Never events from the main list to PossibleEvents, unless they could never occur, in which case we can just delete them.
+            for (int i = Events.Count - 1; i >= 0; i--)
+            {
+                if (Events[i].TimeRemaining.IsNever)
+                {
+                    if (Events[i].CouldOccur)
+                    {
+                        PossibleEvents.Add(Events[i]);
+                    }
+                    Events.RemoveAt(i);
+                }
+            }
+            // Finally, add any promotable events to the main list.
+            // These will be sorted in the next phase, so we don't need to worry about sorting them now.
+            Events.AddRange(promotableEvents);
             return Events.Count!=0;
         }
         private bool InstantActionCheck()
