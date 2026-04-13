@@ -79,14 +79,14 @@ namespace Timeline
             {
                 switch (Phase) {
                     case TimelinePhase.Open:
-                        // If we're being told to advance, time to close and purge.
-                        if (purge())
+                        // If we're being told to advance, time to close and Purge.
+                        if (Purge())
                         {
                             Phase = TimelinePhase.Purged;
                         }
                         else
                         {
-                            // If purge returns false, there are no events left to process, so the battle is over. Terminate with the NoEvents reason.
+                            // If Purge returns false, there are no events left to process, so the battle is over. Terminate with the NoEvents reason.
                             Terminate(TerminationType.NoEvents);
                         }
                         break;
@@ -107,7 +107,7 @@ namespace Timeline
                     case TimelinePhase.EffectApplied:
                         // We've done the event, now delete it then check if there are any consequences of the event that need to be added to the timeline, and add them if so.
                         Events.RemoveAt(0);
-                        if (instantActionCheck())
+                        if (InstantActionCheck())
                         {
                             Phase = TimelinePhase.InstantAction;
                         }
@@ -129,11 +129,11 @@ namespace Timeline
             }
             yield break;
         }
-        private bool purge() {
             //TODO: implement purge logic, which moves any events that are not Never among Events and PossibleEvents to Events, and moves any events that are Never among Events to PossibleEvents. Returns false if there are no events left to process after purging, which would indicate that the battle is over due to no events left.
+        private bool Purge() {
             return Events.Count!=0;
         }
-        private bool instantActionCheck()
+        private bool InstantActionCheck()
         {
             //TODO: implement instant action check, which checks if any events in PossibleEvents have become 0 or negative, and if so, moves the earliest of these events to the front of the list in some deterministic order, rewinds time to that new event and returns true. Otherwise, returns false.
             return false;
