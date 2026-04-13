@@ -20,7 +20,7 @@ namespace Timeline
         public ISet<IOkazo<T>> PossibleEvents { get; private set; }
         /// <summary>
         /// Status of the timeline, which determines what happens when Update is called and what actions are allowed. The timeline starts in the Open phase, and must be in the Open phase for events to be added or adjusted. 
-        /// Calling Update will move the timeline through the phases in the order they are defined, with some exceptions for InstantAction phases that can occur multiple times between EffectApplied and Display. 
+        /// Calling Update will move the timeline through the phases in the order they are defined, with some exceptions for InstantAction phases that can occur multiple times between PostEffect and Display. 
         /// After Display, use "SetOpen" to set the timeline back to the Open phase to prepare for the next update.
         /// If the timeline is Terminated, the battle is over, so check the TerminationReason to see how it ended and display the timeline in its final state.
         /// </summary>
@@ -102,11 +102,11 @@ namespace Timeline
                         break;
                     case TimelinePhase.Zeroed:
                         //TODO: Apply the effects...
-                        Phase = TimelinePhase.EffectApplied;
-                        break;
-                    case TimelinePhase.EffectApplied:
-                        // We've done the event, now delete it then check if there are any consequences of the event that need to be added to the timeline, and add them if so.
                         Events.RemoveAt(0);
+                        Phase = TimelinePhase.PostEffect;
+                        break;
+                    case TimelinePhase.PostEffect:
+                        // We've done the event and removed it from the list, but we haven't checked for any things that should happen immediately as a result of this event.
                         if (InstantActionCheck())
                         {
                             Phase = TimelinePhase.InstantAction;
@@ -119,7 +119,7 @@ namespace Timeline
                     case TimelinePhase.InstantAction:
                         // Do the event that just was added...
                         //TODO: Actually do that
-                        Phase = TimelinePhase.EffectApplied; // Then go back to EffectApplied to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
+                        Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
                         break;
                     case TimelinePhase.Display:
                         // We shouldn't actually do anything in this phase, we're waiting for the caller to call SetOpen to move back to the Open phase and prepare for the next update.
@@ -199,9 +199,9 @@ namespace Timeline
         Purged, // Any event that is not Never among Events and PossibleEvents is in Events, and all events in PossibleEvents are Never.
         Sorted, // All events in Events are sorted by time remaining.
         Zeroed, // The next event to occur is at time zero, and all events that are at time zero are at the front of the list in some deterministic order.
-        EffectApplied, // The effect of the event at the front of the list has been applied and deleted, but any consequences of the event have not yet been checked.
-        InstantAction, // Only reached if a Possible Event becomes 0 or negative during the EffectApplied phase. Time is rewound so the earliest of these events is at time zero, and all events that are at time zero are at the front of the list in some deterministic order. Returns to EffectApplied after this.
-        Display, // After EffectApplied and any InstantAction phases are complete, the timeline is ready for display. A visual representation of the timeline should be generated at this point, and any events that are at time zero should be highlighted as occurring now. Set back to Open after this.
+        PostEffect, // An event has just occurred, either from the main list or as an instant action, but we haven't checked for any consequences of this event yet. This is where we check for any events that should occur immediately as a result of this event, and if there are any, we move to the InstantAction phase to do them before moving to Display.
+        InstantAction, // Only reached if a Possible Event becomes 0 or negative during the PostEffect phase. Time is rewound so the earliest of these events is at time zero, and all events that are at time zero are at the front of the list in some deterministic order. Returns to PostEffect after this.
+        Display, // After PostEffect and any InstantAction phases are complete, the timeline is ready for display. A visual representation of the timeline should be generated at this point, and any events that are at time zero should be highlighted as occurring now. Set back to Open after this.
         Terminated = 255 // The battle is over, so the timeline is terminated. No events should be added or processed at this point, and the timeline should be displayed in its final state.
     }
     /// <summary>
