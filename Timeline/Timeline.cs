@@ -81,14 +81,14 @@ namespace Timeline
         /// Goes through the phases of the timeline in order, processing events as necessary, until it reaches the Display phase or Terminated phase. 
         /// Yields a report after each step, which can be used to update the display of the timeline as it changes. 
         /// If the timeline is terminated, the battle is over, so check the TerminationReason to see how it ended and display the timeline in its final state.
-        /// 
-        /// TODO: Actually have a report to return here, and actually implement the logic for each phase. For now, this is just a skeleton to show how the phases will work and to make sure the structure of the timeline is sound.
         /// </summary>
         /// <returns>A report for each stage.</returns>
         internal IEnumerable<StepReport<T>> TakeSteps()
         {
             while (Phase != TimelinePhase.Terminated && Phase != TimelinePhase.Display)
             {
+                StepReport<T> curReport = new(Phase);
+                Advance += curReport.OnAdvance; // Subscribe the report to the Advance event so it can track how much time has advanced during this step.
                 switch (Phase) {
                     case TimelinePhase.Open:
                         // If we're being told to advance, time to close and Purge.
@@ -109,16 +109,13 @@ namespace Timeline
                         break;
                     case TimelinePhase.Sorted:
                         // Move time forward so the next event to occur is at time zero, and move to the Zeroed phase.
-                        if (Advance == null)
-                        {
-                            throw new InvalidOperationException("IOkazoj need to subscribe to the Advance event. Clearly someone forgot this.");
-                        }
                         Advance.Invoke(this, Events[0].TimeRemaining.Time); //This can't be never, since we should have purged it.
                         Phase = TimelinePhase.Zeroed;
                         break;
                     case TimelinePhase.Zeroed:
                         // Do the first event now that time is at zero, and move to the PostEffect phase to check for any consequences of this event.
                         Events[0].Trigger();
+                        curReport.OccurredEvent=Events[0];
                         Events.RemoveAt(0);
                         Phase = TimelinePhase.PostEffect;
                         break;
@@ -127,6 +124,7 @@ namespace Timeline
                         if (InstantActionCheck())
                         {
                             Phase = TimelinePhase.InstantAction;
+                            curReport.ReactionEvent = ReactionEvent;
                         }
                         else
                         {
@@ -144,7 +142,11 @@ namespace Timeline
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
                         break;
                 }
-                yield return new StepReport<T>(); //TODO: actually return something useful here
+                Advance -= curReport.OnAdvance; // Unsubscribe the report from the Advance event so it doesn't track time advancements during the next step.
+                curReport.FinalPhase = Phase;
+                curReport.EventBackup = [.. Events];
+                curReport.PossibleEventBackup = new HashSet<IOkazo<T>>(PossibleEvents);
+                yield return curReport; 
             }
             yield break;
         }
