@@ -13,7 +13,7 @@ namespace Timeline
     /// Comparison must sort by time remaining first, then by some other factor to ensure a deterministic order of events that occur at the same time. This is important to ensure that the timeline behaves predictably and that events are processed in a consistent order, even when they have the same time remaining.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public interface IOkazo<T> : IComparable<IOkazo<T>> where T : INumber<T>, IFormattable
+    public interface IOkazo<T> : IComparable<IOkazo<T>>, IAdvanceable<T> where T : INumber<T>, IFormattable
     {
         /// <summary>
         /// Amount of time until this event occurs. If this event is dynamic, this value may change based on other factors besides time advancing.
@@ -51,12 +51,6 @@ namespace Timeline
             }
             return Tiebreaker(other);
         }
-        /// <summary>
-        /// Handles the advancement event by processing the elapsed time since the last update.
-        /// </summary>
-        /// <param name="sender">The Timeline advancing time</param>
-        /// <param name="timeElapsed">The amount of time to move the event by.</param>
-        public void OnAdvance(object sender, T timeElapsed);
 
         /// <summary>
         /// Raised when this event occurs, allowing listeners to react to the event and update their state accordingly.
