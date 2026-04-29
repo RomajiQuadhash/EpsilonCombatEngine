@@ -12,7 +12,7 @@ namespace CoreMetrics
 	/// </summary>
 	/// <typeparam name="T">Format of time to use</typeparam>
 	public class TimeOrNever<T> : IComparable<TimeOrNever<T>> where T : INumber<T>
-	{
+    {
 		public TimeOrNever() => _internalTime = T.Zero;
 
 		public TimeOrNever(T t) => _internalTime = t;
@@ -74,5 +74,18 @@ namespace CoreMetrics
             }
             return Time.CompareTo(other.Time);
         }
+		/// <summary>
+		/// Returns a string that represents the current object.
+		/// </summary>
+		/// <returns>A string value of "Never" if the object represents a 'never' state; otherwise, the string representation of the
+		/// Time property or "Invalid Time" if the time property gives a null value.</returns>
+		public override string ToString()
+		{
+            if (IsNever)
+            {
+                return "Never";
+            }
+            return Time.ToString() ?? "Invalid Time";
+		}
     }
 }
