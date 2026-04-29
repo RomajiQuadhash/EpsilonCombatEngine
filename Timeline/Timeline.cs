@@ -87,7 +87,7 @@ namespace Timeline
         /// <returns>A report for each stage.</returns>
         internal IEnumerable<StepReport<T>> TakeSteps()
         {
-            while (Phase != TimelinePhase.Terminated)
+            while (Phase != TimelinePhase.Terminated && Phase != TimelinePhase.Display)
             {
                 switch (Phase) {
                     case TimelinePhase.Open:
@@ -142,9 +142,6 @@ namespace Timeline
                         ReactionEvent.Trigger();
                         ReactionEvent = null;
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
-                        break;
-                    case TimelinePhase.Display:
-                        // We shouldn't actually do anything in this phase, we're waiting for the caller to call SetOpen to move back to the Open phase and prepare for the next update.
                         break;
                 }
                 yield return new StepReport<T>(); //TODO: actually return something useful here
