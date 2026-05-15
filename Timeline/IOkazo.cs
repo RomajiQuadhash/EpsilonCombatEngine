@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Timeline.OkazoOptionalProperties;
 
 namespace Timeline
 {
@@ -52,6 +53,11 @@ namespace Timeline
             if (this.Equals(other))
             {
                 return 0;
+            }
+            int genericComparison=OkazoComparitor<T>.Compare(this, other);
+            if (genericComparison != 0)
+            {
+                return genericComparison;
             }
             return Tiebreaker(other);
         }
