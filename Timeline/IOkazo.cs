@@ -43,8 +43,9 @@ namespace Timeline
         /// <param name="other">The IOkazo<T> instance to compare with the current object. Cannot be null.</param>
         /// <returns>A value less than zero if the current instance should occur before the other; zero if they are equal;
         /// or greater than zero if the current instance should occur after.</returns>
-        public new int CompareTo(IOkazo<T> other)
+        public new int CompareTo(IOkazo<T>? other)
         {
+            ArgumentNullException.ThrowIfNull(other);
             int timeComparison = TimeRemaining.CompareTo(other.TimeRemaining);
             if (timeComparison != 0)
             {
