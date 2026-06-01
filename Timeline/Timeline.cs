@@ -77,6 +77,58 @@ namespace Timeline
             Phase = TimelinePhase.Terminated;
             TerminationReason = reason;
         }
+        #endregion
+        #region Event Management
+        /// <summary>
+        /// General method for adding an event to the timeline. If the event is at time Never, it will be added to PossibleEvents, and if it has a valid time remaining, it will be added to Events. 
+        /// You should use this method for any event that is being added during the Open phase, since it will put the event in the correct list based on its time remaining. 
+        /// If you're adding an event during the InstantAction phase, you must use AddPossibleEvent instead, since events added during the InstantAction phase since only PossibleEvents can be run or modified then.
+        /// </summary>
+        /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
+        /// <param name="e"></param>
+        public void AddEvent(IOkazo<T> e)
+        {
+            PhaseValid([TimelinePhase.Open]);
+            if (e.TimeRemaining.IsNever)
+            {
+                PossibleEvents.Add(e);
+            }
+            else
+            {
+                Events.Add(e);
+            }
+        }
+        /// <summary>
+        /// Always adds the event as a possible event. You should only use this for events that are being added as a result of another event, such as a reaction event that is being added during the InstantAction phase. 
+        /// If you're adding an event during the Open phase,you should probably use AddEvent instead, since it will put the event in the correct list based on its time remaining.
+        /// </summary>
+        /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
+        /// <param name="e"></param>
+        public void AddPossibleEvent(IOkazo<T> e)
+        {
+            PhaseValid([TimelinePhase.Open,TimelinePhase.InstantAction]);
+            PossibleEvents.Add(e);
+        }
+        /// <summary>
+        /// Removes an event from the timeline. Will not unsubscribe the event from the Advance event, so unsubscribe manually if you're not just going to delete the event entirely.
+        /// During InstantAction, only PossibleEvents is checked. This can lead to returning false even if the event is on the timeline
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns>True if the event was successfully removed; otherwise, false.</returns>
+        public bool RemoveEvent(IOkazo<T> e)
+        {
+            PhaseValid([TimelinePhase.Open, TimelinePhase.InstantAction]);
+            if(Phase == TimelinePhase.InstantAction)
+            {
+                // During the InstantAction phase, only PossibleEvents can be modified, so only try PossibleEvents.
+                return PossibleEvents.Remove(e);
+            }
+            if (!Events.Remove(e))
+                return PossibleEvents.Remove(e);
+            return true;
+        }
+        #endregion
+        #region Step Processing
         /// <summary>
         /// Goes through the phases of the timeline in order, processing events as necessary, until it reaches the Display phase or Terminated phase. 
         /// Yields a report after each step, which can be used to update the display of the timeline as it changes. 
