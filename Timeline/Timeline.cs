@@ -137,6 +137,10 @@ namespace Timeline
                         {
                             throw new InvalidOperationException("ReactionEvent should have been set in the InstantActionCheck if we returned true, but it was null. Clearly someone forgot to set it.");
                         }
+                        if (ReactionEvent.TimeRemaining.Time != T.Zero)
+                        {
+                            Advance.Invoke(this, ReactionEvent.TimeRemaining.Time); // This should rewind time so the ReactionEvent is at time zero.
+                        }
                         ReactionEvent.Trigger();
                         ReactionEvent = null;
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.

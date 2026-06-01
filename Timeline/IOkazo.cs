@@ -69,7 +69,7 @@ namespace Timeline
         public event Occur<T>? Occurring;
 
         /// <summary>
-        /// Executes the event, rewinding time if necessary, and raises the Occurring event to notify listeners that the event has occurred and take other actions. 
+        /// Executes the event, and raises the Occurring event to notify listeners that the event has occurred and take other actions. 
         /// After this method is called, the event should be considered completed and should be removed from the timeline.
         /// Note that if this is a dynamic event, this might represent a state change, rather than an action to be taken so it might do nothing besides informing listeners.
         /// </summary>
