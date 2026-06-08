@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Timeline.OkazoOptionalProperties;
 
 namespace Timeline
 {
@@ -13,7 +14,7 @@ namespace Timeline
     /// Useful for unit tests, but you should probably use Card or a subclass, since a priority is useful.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public class BaseCard<T> : IOkazo<T> where T : INumber<T>, IFormattable
+    public class BaseCard<T> : IOkazo<T> where T : INumber<T>, IFormattable,IOkUUID
     {
         /// <summary>
         /// A card can always occur, since it is about a specific time in the future.
@@ -89,20 +90,15 @@ namespace Timeline
             return false;
         }
         /// <summary>
-        /// Compares the current instance with another IOkazo<T> instance based on their UUIDs to determine sort order.
-        /// Should only be called if all other tiebreakers have failed, since it is not a meaningful way to sort events, but it is a consistent way to sort them.
+        /// Always throws, since there's no class specific tiebreaker logic for this class.
+        /// Override in a subclass if there's a non-generic tiebreaker you want to add.
         /// </summary>
-        /// <remarks>Instances without a UUID are sorted after those with a UUID.</remarks>
-        /// <param name="other">The IOkazo<T> instance to compare with the current instance.</param>
-        /// <returns>A negative integer if the current instance precedes other, zero if they are equal, or a positive integer if
-        /// it follows other.</returns>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         public virtual int Tiebreaker(IOkazo<T> other)
         {
-            if (other is BaseCard<T> otherCard)
-            {
-                return UUID.CompareTo(otherCard.UUID);
-            }
-            return 1; //Sort after objects without a UUID, since they should be sorted by their own tiebreaker method.
+            throw new InvalidOperationException("No tiebreaker defined after OkazoComparitor checks. Possibly, two events share a UUID but are different types.");
         }
 
         public override string ToString()

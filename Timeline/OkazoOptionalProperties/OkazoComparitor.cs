@@ -21,27 +21,46 @@ namespace Timeline.OkazoOptionalProperties
             int ret = 0;
 
             // First, priority.
-            if (x is IOkPriority)
+            if (x is IOkPriority okXWithPriority)
             {
-                if (y is IOkPriority)
+                if (y is IOkPriority okYWithPriority)
                 {
-                    ret = ((IOkPriority)y).IsHigherPriorityThan((IOkPriority)x);
+                    ret = okYWithPriority.IsHigherPriorityThan(okXWithPriority);
                 }
                 else { 
-                    ret = -((IOkPriority)x).IsHigherThanNone(); 
+                    ret = -(okXWithPriority.IsHigherThanNone()); 
                 }
-            } else if (y is IOkPriority)
+            } else if (y is IOkPriority okYWithPriority)
             {
-                ret = ((IOkPriority)y).IsHigherThanNone();
+                ret = okYWithPriority.IsHigherThanNone();
             }
             if (ret != 0) return ret;
 
             //Then, transition data. Unlike priority, both need to have transition data for it to be a valid tiebreaker
-            if (x is IOkTransition<T> && y is IOkTransition<T>)
+            if (x is IOkTransition<T> okXWithTransition && y is IOkTransition<T> okYWithTransition)
             {
-                ret = ((IOkTransition<T>)x).TransitionData.CompareTo(((IOkTransition<T>)y).TransitionData);
+                ret = okXWithTransition.TransitionData.CompareTo(okYWithTransition.TransitionData);
+                if (ret != 0) return ret;
             }
-            // Possibly more tiebreakers in the future, but for now, if we can't break the tie with these, we should defer to the class's own tiebreaker method.
+            //Imagine other possible Tiebreaker properties here
+
+            //Eventually, try the UUID, which should be the last tiebreaker.
+            if (x is IOkUUID okXWithUUID)
+            {
+                if (y is IOkUUID okYWithUUID)
+                {
+                    ret = okXWithUUID.UUID.CompareTo(okYWithUUID.UUID);
+                }
+                else
+                {
+                    //If only x has a UUID, it should come after y, since it has more specific information.
+                    ret = 1;
+                }
+            } if (y is IOkUUID)
+            {
+                //If only y has a UUID, it should come after x, since it has more specific information.
+                ret = -1;
+            }
             return ret;
         }
     }
