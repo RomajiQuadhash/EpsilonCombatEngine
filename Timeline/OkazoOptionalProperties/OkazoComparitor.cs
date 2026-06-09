@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Timeline.OkazoOptionalProperties
 {
-    public static class OkazoComparitor<T> where T : INumber<T>
+    internal static class OkazoComparitor<T> where T : INumber<T>
     {
         /// <summary>
         /// Tiebreaker comparator for IOkazo<T> that tries to use optional properties to compare consistently
