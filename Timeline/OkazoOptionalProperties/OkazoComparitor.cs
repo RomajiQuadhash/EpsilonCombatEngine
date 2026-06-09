@@ -11,11 +11,12 @@ namespace Timeline.OkazoOptionalProperties
     {
         /// <summary>
         /// Tiebreaker comparator for IOkazo<T> that tries to use optional properties to compare consistently
-        /// If every test here falls through, then we should test with the class's own Tiebreaker method.
+        /// Should make sure that x!=y and that they both are occuring at the time before calling this.
         /// </summary>
         /// <param name="x">The first event to consider</param>
         /// <param name="y">The second event to consider</param>
-        /// <returns>-1 if x should come before y, 1 if x should come after y, 0 if inconclusive (or the events are the same)</returns>
+        /// <exception cref="ArgumentException">Thrown if there's no order between events that can be determined</exception>
+        /// <returns>-1 if x should come before y, 1 if x should come after y, or throws an error if it can't be distinguished.</returns>
         public static int Compare(IOkazo<T> x, IOkazo<T> y)
         {
             int ret = 0;
@@ -42,7 +43,28 @@ namespace Timeline.OkazoOptionalProperties
                 ret = okXWithTransition.TransitionData.CompareTo(okYWithTransition.TransitionData);
                 if (ret != 0) return ret;
             }
-            //Imagine other possible Tiebreaker properties here
+            //Put new properties here.
+
+
+            //Second to last, see if we have an object specific tiebreaker.
+            if (x is IOkTiebreaker<T> okXWithTiebreaker)
+            {
+                ret = okXWithTiebreaker.Tiebreaker(y);
+                if (y is IOkTiebreaker<T> okYWithTiebreaker)
+                {
+                    if (ret!=0 && okYWithTiebreaker.Tiebreaker(x)==ret) //These being equal means both think they should be first or both second.
+                    {
+                        ret = 0; //set it as inconclusive
+                    }
+                    else if(ret==0) //if X is inconclusive though, try Y
+                    {
+                        ret = -okYWithTiebreaker.Tiebreaker(x);
+                    }
+                }
+            } else if (y is IOkTiebreaker<T> okYWithTiebreaker)
+            {
+                ret = -okYWithTiebreaker.Tiebreaker(x);
+            }
 
             //Eventually, try the UUID, which should be the last tiebreaker.
             if (x is IOkUUID okXWithUUID)
@@ -61,7 +83,8 @@ namespace Timeline.OkazoOptionalProperties
                 //If only y has a UUID, it should come after x, since it has more specific information.
                 ret = -1;
             }
-            return ret;
+            if (ret != 0) return ret;
+            throw new ArgumentException("Two events can't be compared but are not equal.");
         }
     }
 }

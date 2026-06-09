@@ -118,17 +118,7 @@ namespace Timeline
             Occurring?.Invoke(this, this);
             OwningTimeline.Advance -= OnAdvance;
         }
-        /// <summary>
-        /// Always throws, since there's no class specific tiebreaker logic for this class.
-        /// Override in a subclass if there's a non-generic tiebreaker you want to add.
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
-        public virtual int Tiebreaker(IOkazo<T> other)
-        {
-            throw new InvalidOperationException("No tiebreaker defined after OkazoComparitor checks. Possibly, two events share a UUID but are different types.");
-        }
+        
         public int CompareTo(IOkazo<T>? other)
         {
             return ((IOkazo<T>)this).CompareTo(other);
