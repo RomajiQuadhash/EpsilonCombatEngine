@@ -35,22 +35,22 @@ namespace Timeline
         /// Copy of the events on the timeline as they were at the end of the step, for reference.
         /// Note that this is shallow copy so don't rely on it persisting into the next step.
         /// </summary>
-        public List<IOkazo<T>>? EventBackup { get; set; }
+        public List<Okazo<T>>? EventBackup { get; set; }
         /// <summary>
         /// Shallow copy of the events that are not currently on the timeline but could occur in the future, for reference.
         /// Note that this is shallow copy so don't rely on it persisting into the next step.
         /// </summary>
-        public ISet<IOkazo<T>>? PossibleEventBackup { get; set; }
+        public ISet<Okazo<T>>? PossibleEventBackup { get; set; }
         /// <summary>
         /// If an event occurred during this step, saves the event.
         /// Note that this is shallow copy so don't rely on it persisting into the next step.
         /// </summary>
-        public IOkazo<T>? OccurredEvent { get; set; }
+        public Okazo<T>? OccurredEvent { get; set; }
         /// <summary>
         /// If there is an event selected to be a reaction during this step, saves the event.
         /// Note that this is shallow copy so don't rely on it persisting into the next step.
         /// </summary>
-        public IOkazo<T>? ReactionEvent { get; set; }
+        public Okazo<T>? ReactionEvent { get; set; }
 
         public StepReport(TimelinePhase initial) : base()
         {

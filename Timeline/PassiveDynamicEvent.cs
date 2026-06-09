@@ -16,20 +16,20 @@ namespace Timeline
     /// </summary>
     /// <remarks>If you're updating the TimeRemaining frequently, consider if a dedicated Dynamic event class should be made.</remarks>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public class PassiveDynamicEvent<T> : IOkazo<T>, IOkUUID where T : INumber<T>
+    public class PassiveDynamicEvent<T> : Okazo<T>, IOkUUID where T : INumber<T>
     {
         /// <summary>
         /// The TimeOrNever representing how long until this event occurs.
         /// Needs to be set manually, but will automatically update when time advances.
         /// </summary>
-        public TimeOrNever<T> TimeRemaining { get; set; }
+        public override TimeOrNever<T> TimeRemaining { get; set; }
         private bool _couldOccur;
 
         /// <summary>
         /// Only settable (to false) or matters if TimeRemaining is Never. 
         /// If true, this event could occur at some point in the future so it should be kept track of, but if false, this event will never occur and can be safely discarded.
         /// </summary>
-        public bool CouldOccur {
+        public override bool CouldOccur {
             get { 
                 if (TimeRemaining.IsNever)
                 {
@@ -49,7 +49,7 @@ namespace Timeline
                 throw new InvalidOperationException("An event with a time remaining will occur.");
             } }
 
-        public event Occur<T>? Occurring;
+        public override event Occur<T>? Occurring;
         /// <summary>
         /// Guarentee that there's at least one difference between two events.
         /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
@@ -86,7 +86,7 @@ namespace Timeline
             owningTimeline.AddPossibleEvent(this);
         }
 
-        public void OnAdvance(object? sender, T e)
+        public override void OnAdvance(object? sender, T e)
         {
             if (sender != OwningTimeline)
             {
@@ -102,7 +102,7 @@ namespace Timeline
         /// If possible, invoke the Occuring event and remove this from the timeline's advance event.
         /// </summary>
         /// <exception cref="InvalidOperationException">If the time isn't zero, then can't trigger</exception>
-        public void Trigger()
+        public override void Trigger()
         {
             if(TimeRemaining.IsNever)
             {
@@ -115,18 +115,13 @@ namespace Timeline
             Occurring?.Invoke(this, this);
             OwningTimeline.Advance -= OnAdvance;
         }
-        
-        public int CompareTo(IOkazo<T>? other)
-        {
-            return ((IOkazo<T>)this).CompareTo(other);
-        }
 
         /// <summary>
         /// Simple UUID-based equality. Two events with the same UUID should be the same event, so if the other is a PassiveDynamicEvent<T> with the same UUID, we return true, otherwise false.
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        public bool Equals(IOkazo<T>? other)
+        public override bool Equals(Okazo<T>? other)
         {
             if (other is PassiveDynamicEvent<T> otherEvent)
             {

@@ -14,17 +14,17 @@ namespace Timeline
         /// The current list of events on the timeline, sorted by time remaining.
         /// Re-sorted after every time advancement since one or more events may have changed their time remaining, and new events may have been added.
         /// </summary>
-        public List<IOkazo<T>> Events { get; private set; }
+        public List<Okazo<T>> Events { get; private set; }
         /// <summary>
         /// Any events that are at time Never but could occur at some point in the future, so they should be kept track of. This is separate from the main list of events since they don't have a time remaining that can be used to sort them, and they shouldn't be processed until they have a valid time remaining.
         /// </summary>
-        public ISet<IOkazo<T>> PossibleEvents { get; private set; }
+        public ISet<Okazo<T>> PossibleEvents { get; private set; }
         /// <summary>
         /// If an event should occur immediately, this is set to that event so it can be processed in the InstantAction phase. Otherwise, this is null.
         /// Note that only one event can be processed per InstantAction phase, so this isn't a list.
         /// This is because one ReactionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
         /// </summary>
-        public IOkazo<T>? ReactionEvent { get; private set; }
+        public Okazo<T>? ReactionEvent { get; private set; }
 
         /// <summary>
         /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
@@ -45,7 +45,7 @@ namespace Timeline
         public Timeline()
         {
             Events = [];
-            PossibleEvents = new HashSet<IOkazo<T>>();
+            PossibleEvents = new HashSet<Okazo<T>>();
         }
 
         #region Phase Handlers
@@ -86,7 +86,7 @@ namespace Timeline
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
-        public void AddEvent(IOkazo<T> e)
+        public void AddEvent(Okazo<T> e)
         {
             PhaseValid([TimelinePhase.Open]);
             if (e.TimeRemaining.IsNever)
@@ -104,7 +104,7 @@ namespace Timeline
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
-        public void AddPossibleEvent(IOkazo<T> e)
+        public void AddPossibleEvent(Okazo<T> e)
         {
             PhaseValid([TimelinePhase.Open,TimelinePhase.InstantAction]);
             PossibleEvents.Add(e);
@@ -115,7 +115,7 @@ namespace Timeline
         /// </summary>
         /// <param name="e"></param>
         /// <returns>True if the event was successfully removed; otherwise, false.</returns>
-        public bool RemoveEvent(IOkazo<T> e)
+        public bool RemoveEvent(Okazo<T> e)
         {
             PhaseValid([TimelinePhase.Open, TimelinePhase.InstantAction]);
             if(Phase == TimelinePhase.InstantAction)
@@ -156,7 +156,7 @@ namespace Timeline
                         break;
                     case TimelinePhase.Purged:
                         // Now, sort the events and move to the Sorted phase.
-                        Events.Sort(); // This should sort by time remaining since IOkazo<T> implements IComparable and should be compared by time remaining. No events are Never, so there won't be a NeverIsNotATime exception here.
+                        Events.Sort(); // This should sort by time remaining since Okazo<T> implements IComparable and should be compared by time remaining. No events are Never, so there won't be a NeverIsNotATime exception here.
                         Phase = TimelinePhase.Sorted;
                         break;
                     case TimelinePhase.Sorted:
@@ -201,7 +201,7 @@ namespace Timeline
                 Advance -= curReport.OnAdvance; // Unsubscribe the report from the Advance event so it doesn't track time advancements during the next step.
                 curReport.FinalPhase = Phase;
                 curReport.EventBackup = [.. Events];
-                curReport.PossibleEventBackup = new HashSet<IOkazo<T>>(PossibleEvents);
+                curReport.PossibleEventBackup = new HashSet<Okazo<T>>(PossibleEvents);
                 yield return curReport; 
             }
             yield break;
@@ -212,8 +212,8 @@ namespace Timeline
         /// <returns>True if there are events left to process after purging, false otherwise.</returns>
         private bool Purge() {
             //First, clean up possible events, and save any to promote to the main list.
-            List<IOkazo<T>> promotableEvents = [];
-            foreach (IOkazo<T> e in PossibleEvents)
+            List<Okazo<T>> promotableEvents = [];
+            foreach (Okazo<T> e in PossibleEvents)
             {
                 if (e.CouldOccur && e.TimeRemaining.IsNever)
                 {
@@ -257,7 +257,7 @@ namespace Timeline
             }
             // Keep track of the earliest time remaining among the possible events
             TimeOrNever<T> timeToBeat = new();
-            foreach (IOkazo<T> e in PossibleEvents)
+            foreach (Okazo<T> e in PossibleEvents)
             {
                 if (e.TimeRemaining.CompareTo(timeToBeat) > 0)
                 {

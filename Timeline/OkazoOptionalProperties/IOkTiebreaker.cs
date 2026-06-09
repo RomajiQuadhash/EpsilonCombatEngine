@@ -15,6 +15,6 @@ namespace Timeline.OkazoOptionalProperties
         /// </summary>
         /// <param name="other"></param>
         /// <returns>-1 if this should occur before the other, +1 if it should occur after, and 0 if inconclusive</returns>
-        public int Tiebreaker(IOkazo<T> other);
+        public int Tiebreaker(Okazo<T> other);
     }
 }

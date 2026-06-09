@@ -29,7 +29,7 @@ namespace Timeline
         /// </summary>
         /// <param name="other">Other card.</param>
         /// <returns>True if the cards are equal, false otherwise.</returns>
-        public override bool Equals(IOkazo<T>? other)
+        public override bool Equals(Okazo<T>? other)
         {
             if (other is Card<T,F> otherCard)
             {
@@ -62,7 +62,7 @@ namespace Timeline
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        public int Tiebreaker(IOkazo<T> other)
+        public int Tiebreaker(Okazo<T> other)
         {
             if (other is Card<T, F> otherCard)
             {
