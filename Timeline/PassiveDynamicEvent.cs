@@ -141,7 +141,7 @@ namespace Timeline
         {
             if (TimeRemaining.IsNever)
             {
-                return $"PassiveDynamicEvent (UUID:{UUID}) that has no time remaining. CouldOccur:{CouldOccur}";
+                return $"PassiveDynamicEvent (UUID:{UUID}) without a time remaining. CouldOccur:{CouldOccur}";
             }
             return $"PassiveDynamicEvent (UUID:{UUID}) with {TimeRemaining} remaining";
         }
