@@ -36,12 +36,9 @@ namespace Timeline
 
         /// <summary>
         /// Guarentee that there's at least one difference between two cards
+        /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
         /// </summary>
-#if unitTest
-        public int UUID {get; set;} = Guid.NewGuid().GetHashCode();
-#else
-        public int UUID { get; } = Guid.NewGuid().GetHashCode();
-#endif
+        public int UUID { get; set; } = Guid.NewGuid().GetHashCode();
 
         public BaseCard(T timeToEvent, Timeline<T> owningTimeline)
         {
