@@ -14,7 +14,7 @@ namespace Timeline
     /// Useful for unit tests, but you should probably use Card or a subclass, since a priority is useful.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public class BaseCard<T> : IOkazo<T> where T : INumber<T>, IFormattable,IOkUUID
+    public class BaseCard<T> : IOkazo<T>, IOkUUID where T : INumber<T>
     {
         /// <summary>
         /// A card can always occur, since it is about a specific time in the future.

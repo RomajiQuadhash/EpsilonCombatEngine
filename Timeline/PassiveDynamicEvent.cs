@@ -16,7 +16,7 @@ namespace Timeline
     /// </summary>
     /// <remarks>If you're updating the TimeRemaining frequently, consider if a dedicated Dynamic event class should be made.</remarks>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public class PassiveDynamicEvent<T> : IOkazo<T> where T : INumber<T>, IFormattable,IOkUUID
+    public class PassiveDynamicEvent<T> : IOkazo<T>, IOkUUID where T : INumber<T>
     {
         /// <summary>
         /// The TimeOrNever representing how long until this event occurs.

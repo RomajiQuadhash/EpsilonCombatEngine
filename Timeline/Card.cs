@@ -8,7 +8,7 @@ using Timeline.OkazoOptionalProperties;
 
 namespace Timeline
 {
-    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline) where T : INumber<T>, IFormattable, IOkUUID,IOkPriority,IOkTiebreaker<T>
+    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkUUID, IOkPriority, IOkTiebreaker<T> where T : INumber<T>
     {
         /// <summary>
         /// Priority of this card. If not present, treated as "None". Used as a tiebreaker for cards that occur at the same time. Lower numbers occur first. If this value is before "None", it will occur before any events without a priority. "None" and null are effectively the same, but prefer "None" to make it clear that the event was intentionally given no priority, rather than just forgetting to set a priority.
@@ -50,13 +50,9 @@ namespace Timeline
             if (Face is null)
             {
                 faceData +=" that is null";
-            } else if (Face is IFormattable or string)
+            } else
             {
                 faceData += $" has data:{Face}";
-            }
-            else
-            {
-                faceData += " that is not null but not printable";
             }
             return $"Card (UUID:{UUID}) with TimeToEvent: {TimeToEvent}, priority {Priority} and " + faceData;
         }

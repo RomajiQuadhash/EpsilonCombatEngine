@@ -14,7 +14,7 @@ namespace Timeline
     /// Comparison must sort by time remaining first, then by some other factor to ensure a deterministic order of events that occur at the same time. This is important to ensure that the timeline behaves predictably and that events are processed in a consistent order, even when they have the same time remaining.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public interface IOkazo<T> : IComparable<IOkazo<T>>, IEquatable<IOkazo<T>>, IAdvanceable<T> where T : INumber<T>, IFormattable
+    public interface IOkazo<T> : IComparable<IOkazo<T>>, IEquatable<IOkazo<T>>, IAdvanceable<T> where T : INumber<T>
     {
         /// <summary>
         /// Amount of time until this event occurs. If this event is dynamic, this value may change based on other factors besides time advancing.
