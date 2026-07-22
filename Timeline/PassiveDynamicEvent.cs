@@ -117,17 +117,18 @@ namespace Timeline
         }
 
         /// <summary>
-        /// Simple UUID-based equality. Two events with the same UUID should be the same event, so if the other is a PassiveDynamicEvent<T> with the same UUID, we return true, otherwise false.
+        /// Simple UUID-based equality. Two events with the same UUID should be the same event, so if the other is the same type with the same UUID, we return true, otherwise false.
+        /// Please overload, given we don't even care about the TimeRemaining or CouldOccur
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
         public override bool Equals(Okazo<T>? other)
         {
-            if (other is PassiveDynamicEvent<T> otherEvent)
+            if (other == null || other.GetType() != this.GetType())
             {
-                return UUID == otherEvent.UUID;
+                return false;
             }
-            return false;
+            return ((PassiveDynamicEvent<T>)other).UUID == this.UUID;
         }
         public override string ToString()
         {

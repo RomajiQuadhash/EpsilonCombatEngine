@@ -75,17 +75,18 @@ namespace Timeline
             OwningTimeline.Advance -= OnAdvance;
         }
         /// <summary>
-        /// Any Subclass should override this method to provide a more specific equality check, since here we assume the other has to be BaseCard<T> to be equal
+        /// Any Subclass should override this method to provide a more specific equality check,
+        /// since we only check the UUID and object type.
         /// </summary>
-        /// <param name="other">The other Okazo<T> to compare with. Won't be equal if it isn't a BaseCard<T></param>
+        /// <param name="other">The other Okazo<T> to compare with.</param>
         /// <returns></returns>
         public override bool Equals(Okazo<T>? other)
         {
-            if (other is BaseCard<T> otherCard)
+            if (other == null || other.GetType() != this.GetType())
             {
-                return UUID == otherCard.UUID;
+                return false;
             }
-            return false;
+            return UUID == ((BaseCard<T>)other).UUID;
         }
 
         public override string ToString()
