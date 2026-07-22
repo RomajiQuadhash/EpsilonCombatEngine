@@ -78,7 +78,7 @@ namespace Timeline.OkazoOptionalProperties
                     //If only x has a UUID, it should come after y, since it has more specific information.
                     ret = 1;
                 }
-            } if (y is IOkUUID)
+            } else if (y is IOkUUID)
             {
                 //If only y has a UUID, it should come after x, since it has more specific information.
                 ret = -1;
