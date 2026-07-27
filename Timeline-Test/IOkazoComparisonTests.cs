@@ -137,6 +137,31 @@ namespace Timeline_Test
             Assert.Equal(-1, alpha.CompareTo(beta));
             Assert.Equal(1, beta.CompareTo(alpha));
         }
-
+        [Fact(DisplayName = "If one event has priority above None, and the other doesn't have a priority, the event with priority goes first")]
+        public void Test11()
+        {
+            Timeline<int> timeline = new();
+            Card<int,int> alpha = new(0, timeline);
+            BaseCard<int> beta = new(0, timeline);
+            alpha.Priority = PrioityRank.DebugHigh;
+            //Set UUIDs so if priority is not used, the test will fail.
+            alpha.UUID = 1;
+            beta.UUID = 0;
+            Assert.Equal(-1, alpha.CompareTo(beta));
+            Assert.Equal(1, beta.CompareTo(alpha));
+        }
+        [Fact(DisplayName = "If an event with a priority has a priority below None, it sorts after events that don't have a priority")]
+        public void Test12()
+        {
+            Timeline<int> timeline = new();
+            Card<int,int> alpha = new(0, timeline);
+            BaseCard<int> beta = new(0, timeline);
+            alpha.Priority = PrioityRank.ReturnPlayerControl;
+            //Set UUIDs so if priority is not used, the test will fail.
+            alpha.UUID = 0;
+            beta.UUID = 1;
+            Assert.Equal(1, alpha.CompareTo(beta));
+            Assert.Equal(-1, beta.CompareTo(alpha));
+        }
     }
 }
