@@ -300,6 +300,16 @@ namespace Timeline
                 throw new InvalidPhaseForActionException($"Phase must be one of {validPhases} to perform this action. Current phase: {Phase}");
             }
         }
+        /// <summary>
+        /// Changes the phase of the timeline for debugging purposes. This should only be used in unit tests.
+        /// </summary>
+        /// <param name="newPhase">The phase to set the timeline to. ALWAYS avoid using this if possible</param>
+        /// <exception cref="InvalidOperationException">Always thrown. Catch in unit tests, but don't catch this ever in real code.</exception>
+        public void DebugChangePhase(TimelinePhase newPhase)
+        {
+            Phase = newPhase;
+            throw new InvalidOperationException("DebugChangePhase should only be used for testing purposes. Don't use this in production code.");
+        }
         #endregion
 
     }
