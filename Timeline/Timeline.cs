@@ -259,7 +259,7 @@ namespace Timeline
             TimeOrNever<T> timeToBeat = new();
             foreach (Okazo<T> e in PossibleEvents)
             {
-                if (e.TimeRemaining.CompareTo(timeToBeat) > 0)
+                if (e.TimeRemaining.CompareTo(timeToBeat) > 0) //Note that if e.TimeRemaining is Never, then it will be greater than timeToBeat, so we don't need to check for that explicitly.
                 {
                     // If e is later than the timeToBeat, then it is positive, less negative than the current ReactionEvent, or it is never.
                     continue;
