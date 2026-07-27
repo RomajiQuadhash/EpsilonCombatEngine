@@ -61,8 +61,7 @@ namespace Timeline
         /// Used to mark that this event is occuring. Should only be called by the timeline, 
         /// and only when TimeToEvent is zero, since otherwise the event shouldn't be occuring yet.
         /// </summary>
-        /// <remarks>Note that this method is NOT virtual and doesn't call a virtual function.
-        /// This is by design, since Cards should be informing other objects and not doing anything themselves.
+        /// <remarks>Please don't override this method. Cards are only supposed to notify their listeners, not actually do anything else.
         /// </remarks>
         /// <exception cref="InvalidOperationException">If the time isn't zero when triggering the event, thrown</exception>
         public override void Trigger()
