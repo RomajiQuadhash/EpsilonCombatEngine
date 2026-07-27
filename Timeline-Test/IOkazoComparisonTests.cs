@@ -120,5 +120,23 @@ namespace Timeline_Test
             Assert.Equal(-1, alpha.CompareTo(beta));
             Assert.Equal(1, beta.CompareTo(alpha));
         }
+        //TransitionData comparison will be in its own test class, since no Okazo<T> implementation currently implements it and it is a bit more complex than the other comparisons.
+        //Add other tests for the other optional properties as they are added
+        [Fact(DisplayName = "Second to last, use object specific tiebreakers")]
+        public void Test10() { 
+            Timeline<int> timeline = new();
+            Card<int,int> alpha = new(0, timeline);
+            Card<int,int> beta = new(0, timeline);
+            //Set UUIDs so if the tiebreaker is not used, the test will fail.
+            alpha.UUID = 1;
+            beta.UUID = 0;
+            //Card has a simple tiebreaker based on the Face property, so set them to sort alpha first.
+            //Unit testing for the tiebreaker for card would be elsewhere if needed.
+            alpha.Face = 0;
+            beta.Face = 1;
+            Assert.Equal(-1, alpha.CompareTo(beta));
+            Assert.Equal(1, beta.CompareTo(alpha));
+        }
+
     }
 }

@@ -65,6 +65,7 @@ namespace Timeline.OkazoOptionalProperties
             {
                 ret = -okYWithTiebreaker.Tiebreaker(x);
             }
+            if (ret != 0) return ret;
 
             //Eventually, try the UUID, which should be the last tiebreaker.
             if (x is IOkUUID okXWithUUID)
