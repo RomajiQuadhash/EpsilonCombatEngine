@@ -135,7 +135,7 @@ namespace Timeline
         /// If the timeline is terminated, the battle is over, so check the TerminationReason to see how it ended and display the timeline in its final state.
         /// </summary>
         /// <returns>A report for each stage.</returns>
-        internal IEnumerable<StepReport<T>> TakeSteps()
+        public IEnumerable<StepReport<T>> TakeSteps()
         {
             while (Phase != TimelinePhase.Terminated && Phase != TimelinePhase.Display)
             {
