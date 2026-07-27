@@ -60,8 +60,8 @@ namespace Timeline
         /// <summary>
         /// Tries to tiebreak this card against another card after any standard comparisons (time, priority), but before last ditch comparisons (UUID)
         /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
+        /// <param name="other">Another event. If not a Card with the same face type, the tiebreaker will not be applied.</param>
+        /// <returns>negative if should come before other, 0 if inconclusive, positive if should come after other</returns>
         public int Tiebreaker(Okazo<T> other)
         {
             if (other is Card<T, F> otherCard)

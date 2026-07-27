@@ -16,7 +16,7 @@ namespace Timeline.OkazoOptionalProperties
     /// 3. Furthest behind the threshold before the crossing
     /// 4. Largest progressive change at the time of crossing
     /// </summary>
-    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
+    /// <typeparam name="T">The numeric type used for the metric. Assumed to be able to hold fractional values</typeparam>
     internal class TransitionData<T>: IComparable<TransitionData<T>> where T : INumber<T> 
     {
         /// <summary>
@@ -68,7 +68,7 @@ namespace Timeline.OkazoOptionalProperties
                 threshold = -threshold;
                 progressiveChange = -progressiveChange;
             }
-            if (after<threshold)
+            if (after<threshold) //Note that instantChange is guaranteed to be positive here and in the same direction as the overall change, which is why we can just check if after<threshold to see if it crossed the threshold.
             {
                 throw new InvalidOperationException("After value didn't cross the threshold");
             }
