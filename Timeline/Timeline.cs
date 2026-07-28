@@ -99,28 +99,30 @@ namespace Timeline
             }
         }
         /// <summary>
-        /// Always adds the event as a possible event. You should only use this for events that are being added as a result of another event, such as a reaction event that is being added during the InstantAction phase. 
+        /// Always adds the event as a possible event. You should only use this for events added during another event, such as:
+        /// *The Zeroed phase, during executing an event, where we want to set up an event caused by the event that just occurred, but we don't know if it will occur immediately or not, so we add it to PossibleEvents and let the InstantActionCheck handle it. (if we know it will occur immediately, we can just do the effects without the timeline)
+        /// *A reaction event that is being added during the InstantAction phase. 
         /// If you're adding an event during the Open phase,you should probably use AddEvent instead, since it will put the event in the correct list based on its time remaining.
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
         public void AddPossibleEvent(Okazo<T> e)
         {
-            PhaseValid([TimelinePhase.Open,TimelinePhase.InstantAction]);
+            PhaseValid([TimelinePhase.Open,TimelinePhase.Zeroed,TimelinePhase.InstantAction]);
             PossibleEvents.Add(e);
         }
         /// <summary>
         /// Removes an event from the timeline. Will not unsubscribe the event from the Advance event, so unsubscribe manually if you're not just going to delete the event entirely.
-        /// During InstantAction, only PossibleEvents is checked. This can lead to returning false even if the event is on the timeline
+        /// During InstantAction or Zeroed, only PossibleEvents is checked. This can lead to returning false even if the event is on the timeline
         /// </summary>
         /// <param name="e"></param>
         /// <returns>True if the event was successfully removed; otherwise, false.</returns>
         public bool RemoveEvent(Okazo<T> e)
         {
-            PhaseValid([TimelinePhase.Open, TimelinePhase.InstantAction]);
-            if(Phase == TimelinePhase.InstantAction)
+            PhaseValid([TimelinePhase.Open, TimelinePhase.InstantAction, TimelinePhase.Zeroed]);
+            if(Phase != TimelinePhase.Open)
             {
-                // During the InstantAction phase, only PossibleEvents can be modified, so only try PossibleEvents.
+                // During the InstantAction or Zeroed phase, only PossibleEvents can be modified, so only try PossibleEvents.
                 return PossibleEvents.Remove(e);
             }
             if (!Events.Remove(e))

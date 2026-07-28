@@ -80,14 +80,14 @@ public class TimelineBasicTests
             Assert.DoesNotContain(card, timeline.PossibleEvents);
         }
     }
-    [Fact(DisplayName = "AddPossibleEvent throws an error if the TimelinePhase isn't Open or InstantAction")]
+    [Fact(DisplayName = "AddPossibleEvent throws an error if the TimelinePhase isn't Open, Zeroed, or InstantAction")]
     public void Test7()
     {
         Timeline<int> timeline = new();
         BaseCard<int> card = new(1, timeline);
         for (TimelinePhase phase = TimelinePhase.Purged; phase <= TimelinePhase.Terminated; phase++) //Start after Open
         { 
-            if (phase == TimelinePhase.InstantAction) { continue; } //Skip InstantAction, since that phase allows adding possible events
+            if (phase == TimelinePhase.Zeroed || phase == TimelinePhase.InstantAction) { continue; } //Skip InstantAction and Zeroed, since those phases allow adding possible events
             Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(phase)); //Should throw an error always. Make sure of that
             Assert.Throws<InvalidPhaseForActionException>(() => timeline.AddPossibleEvent(card));
             Assert.DoesNotContain(card, timeline.Events); //This should never happen, since AddPossibleEvent should never add to Events, but best to be safe and check
@@ -108,7 +108,7 @@ public class TimelineBasicTests
         Assert.DoesNotContain(card, timeline.Events);
         Assert.DoesNotContain(autoAddedNever, timeline.Events);
     }
-    [Fact(DisplayName = "Removing an event throws an error if the TimelinePhase isn't Open or InstantAction")]
+    [Fact(DisplayName = "Removing an event throws an error if the TimelinePhase isn't Open, Zeroed, or InstantAction")]
     public void Test9()
     {
         Timeline<int> timeline = new();
@@ -116,14 +116,14 @@ public class TimelineBasicTests
         timeline.AddEvent(card);
         for (TimelinePhase phase = TimelinePhase.Purged; phase <= TimelinePhase.Terminated; phase++) //Start after Open
         {
-            if (phase == TimelinePhase.InstantAction) { continue; } //Skip InstantAction, since that phase allows removing events
+            if (phase == TimelinePhase.InstantAction || phase == TimelinePhase.Zeroed) { continue; } //Skip InstantAction and Zeroed, since those phases allow removing events
             Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(phase)); //Should throw an error always. Make sure of that
             Assert.Throws<InvalidPhaseForActionException>(() => timeline.RemoveEvent(card));
             Assert.Contains(card, timeline.Events); //The event should still be in Events, since the removal should have failed
             Assert.DoesNotContain(card, timeline.PossibleEvents);
         }
     }
-    [Fact(DisplayName = "Removing an event only removes from PossibleEvents if the TimelinePhase is InstantAction")]
+    [Fact(DisplayName = "Removing an event only removes from PossibleEvents if the TimelinePhase is InstantAction or Zeroed")]
     public void Test10()
     {
         Timeline<int> timeline = new();
@@ -131,6 +131,18 @@ public class TimelineBasicTests
         PassiveDynamicEvent<int> autoAddedNever = new(false, timeline);
         timeline.AddEvent(card);
         Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.InstantAction));
+        Assert.False(timeline.RemoveEvent(card));
+        Assert.Contains(card, timeline.Events);
+        Assert.DoesNotContain(card, timeline.PossibleEvents);
+        Assert.True(timeline.RemoveEvent(autoAddedNever));
+        Assert.DoesNotContain(autoAddedNever, timeline.Events);
+        Assert.DoesNotContain(autoAddedNever, timeline.PossibleEvents);
+
+        //Reset to Zeroed and test again
+        Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Zeroed));
+        timeline.AddPossibleEvent(autoAddedNever); //Add it back to PossibleEvents so we can test removing it again
+
+        //Behavior should be the same as in InstantAction phase
         Assert.False(timeline.RemoveEvent(card));
         Assert.Contains(card, timeline.Events);
         Assert.DoesNotContain(card, timeline.PossibleEvents);
