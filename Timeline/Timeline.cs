@@ -280,11 +280,6 @@ namespace Timeline
             }
             // Remove the ReactionEvent from PossibleEvents, since it's now happening.
             PossibleEvents.Remove(ReactionEvent);
-            // Rewind time so the ReactionEvent is at time zero. (if it's already at time zero, do nothing)
-            if (!T.IsZero(ReactionEvent.TimeRemaining.Time))
-            {
-                Advance?.Invoke(this, ReactionEvent.TimeRemaining.Time);
-            }
             return true;
         }
         #endregion
