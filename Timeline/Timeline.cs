@@ -196,6 +196,7 @@ namespace Timeline
                             Advance.Invoke(this, ReactionEvent.TimeRemaining.Time); // This should rewind time so the ReactionEvent is at time zero.
                         }
                         ReactionEvent.Trigger();
+                        curReport.OccurredEvent = ReactionEvent;
                         ReactionEvent = null;
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
                         break;
