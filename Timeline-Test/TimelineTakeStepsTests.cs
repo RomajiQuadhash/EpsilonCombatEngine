@@ -536,6 +536,205 @@ namespace Timeline_Test
         #region InstantAction "loop" tests
         //This region will be filled with making sure Instant Actions occur appropriately, in an appropriate sequence, and don't trigger anything else
         //This will test both that the events are triggered in the correct order and that multiple events are only all triggered if they occur concurrently.
+        [Fact(DisplayName ="If there's one PossibleEvent and it has time remaining 0, then PostEffect -> InstantAction (event is triggered) -> PostEffect -> Display")]
+        public void InstantActionSingleEvent()
+        {
+            Timeline<int> timeline = new();
+            BaseCard<int> possibleEvent = new(0, timeline);
+            timeline.AddPossibleEvent(possibleEvent);
+            MostRecentEventHolder<int> mostRecentEventHolder = new();
+            possibleEvent.Occurring += mostRecentEventHolder.OnTrigger;
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.PostEffect));
+            int stepsTaken = 3;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                if (stepsTaken == 4) //This is the PostEffect -> InstantAction step
+                {
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup); //The possible event should be removed since it is queued to be triggered in the InstantAction phase.
+                    Assert.Null(stepReport.OccurredEvent); //The event hasn't been triggered yet, so it should be null.
+                    Assert.Null(mostRecentEventHolder.MostRecentEvent); //The event hasn't been triggered yet, so it should be null.
+                    Assert.Equal(possibleEvent, stepReport.ReactionEvent); //But it should be queued up to be triggered in InstantAction phase
+                }
+                else if (stepsTaken == 5) //This is the InstantAction -> PostEffect step
+                {
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                    Assert.Equal(possibleEvent, stepReport.OccurredEvent); //The event should have been triggered now.
+                    Assert.Equal(possibleEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
+                    Assert.Null(stepReport.ReactionEvent);
+                }
+            }
+            Assert.Equal(6, stepsTaken); //Should have taken 6 steps to reach Display and should break once it does
+            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken six steps, so the timeline should now be in Display phase since there are no more events to process.
+        }
+        [Fact(DisplayName = "If the PossibleEvent in InstantActionSingleEvent is in the past, time is rewound in InstantAction")]
+        public void InstantActionSingleEventInPast()
+        {
+            Timeline<int> timeline = new();
+            BaseCard<int> possibleEvent = new(-3, timeline);
+            timeline.AddPossibleEvent(possibleEvent);
+            MostRecentEventHolder<int> mostRecentEventHolder = new();
+            possibleEvent.Occurring += mostRecentEventHolder.OnTrigger;
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.PostEffect));
+            int stepsTaken = 3;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                if (stepsTaken == 4) //This is the PostEffect -> InstantAction step
+                {
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup); //The possible event should be removed since it is queued to be triggered in the InstantAction phase.
+                    Assert.Null(stepReport.OccurredEvent); //The event hasn't been triggered yet, so it should be null.
+                    Assert.Null(mostRecentEventHolder.MostRecentEvent); //The event hasn't been triggered yet, so it should be null.
+                    Assert.Equal(possibleEvent, stepReport.ReactionEvent); //But it should be queued up to be triggered in InstantAction phase
+                }
+                else if (stepsTaken == 5) //This is the InstantAction -> PostEffect step
+                {
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.FinalPhase);
+                    Assert.Equal(-3, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                    Assert.Equal(possibleEvent, stepReport.OccurredEvent); //The event should have been triggered now.
+                    Assert.Equal(possibleEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
+                    Assert.Null(stepReport.ReactionEvent);
+                }
+            }
+            Assert.Equal(6, stepsTaken);
+            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken six steps, so the timeline should now be in Display phase since there are no more events to process.
+        }
+        [Fact(DisplayName ="If there are two possible events and one is more negative than the other, only the most negative occurs as an InstantAction")]
+        public void InstantActionTwoEventsOneTrigger()
+        {
+            Timeline<int> timeline = new();
+            BaseCard<int> earliestEvent = new(-4, timeline);
+            BaseCard<int> latestEvent = new(-2, timeline);
+
+            //Make sure it isn't the most recently added event
+            timeline.AddPossibleEvent(latestEvent);
+            timeline.AddPossibleEvent(earliestEvent);
+
+            MostRecentEventHolder<int> mostRecentEventHolder = new();
+            earliestEvent.Occurring += mostRecentEventHolder.OnTrigger;
+            latestEvent.Occurring += mostRecentEventHolder.OnTrigger;
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.PostEffect));
+            int stepsTaken = 3;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                if (stepsTaken == 4) //This is the PostEffect -> InstantAction step
+                {
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>() { latestEvent }, stepReport.PossibleEventBackup); //The possible event should be removed since it is queued to be triggered in the InstantAction phase.
+                    Assert.Null(stepReport.OccurredEvent); //The event hasn't been triggered yet, so it should be null.
+                    Assert.Null(mostRecentEventHolder.MostRecentEvent); //The event hasn't been triggered yet, so it should be null.
+                    Assert.Equal(earliestEvent, stepReport.ReactionEvent); //But it should be queued up to be triggered in InstantAction phase
+                }
+                else if (stepsTaken == 5) //This is the InstantAction -> PostEffect step
+                {
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.FinalPhase);
+                    Assert.Equal(-4, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>() { latestEvent }, stepReport.PossibleEventBackup);
+                    Assert.Equal(earliestEvent, stepReport.OccurredEvent); //The event should have been triggered now.
+                    Assert.Equal(earliestEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
+                    Assert.Null(stepReport.ReactionEvent);
+                }
+            }
+            Assert.Equal(6, stepsTaken); //If this fails, then we did both events instead of just one
+            Assert.Equal(TimelinePhase.Display, timeline.Phase);
+        }
+        [Fact(DisplayName ="If there are two possible events that share a time, PostEffect -> InstantAction -> PostEffect loops, doing them in sort order")]
+        public void InstantActionMultipleTrigger()
+        {
+            Timeline<int> timeline = new();
+            BaseCard<int> card1 = new(-2, timeline);
+            BaseCard<int> card2 = new(-2, timeline);
+
+            //Set UUIDs to guarentee that card1 sorts before card2
+            card1.UUID = 1;
+            card2.UUID = 2;
+
+            //Just in case HashSet has some preference for earliest added, add them "backwards"
+            timeline.AddPossibleEvent(card2);
+            timeline.AddPossibleEvent(card1);
+
+            MostRecentEventHolder<int> mostRecentEventHolder = new();
+            card1.Occurring += mostRecentEventHolder.OnTrigger;
+            card2.Occurring += mostRecentEventHolder.OnTrigger;
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.PostEffect));
+            int stepsTaken = 3;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                if (stepsTaken == 4) //First event found
+                {
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>() { card2 }, stepReport.PossibleEventBackup); 
+                    Assert.Null(stepReport.OccurredEvent); 
+                    Assert.Null(mostRecentEventHolder.MostRecentEvent);
+                    Assert.Equal(card1, stepReport.ReactionEvent);
+                } else if (stepsTaken == 5) //First event triggered
+                {
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.FinalPhase);
+                    Assert.Equal(-2, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>() { card2 }, stepReport.PossibleEventBackup);
+                    Assert.Equal(card1, stepReport.OccurredEvent); 
+                    Assert.Equal(card1, mostRecentEventHolder.MostRecentEvent);
+                    Assert.Null(stepReport.ReactionEvent);
+                } else if (stepsTaken == 6) //Second event found
+                {
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount);
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                    Assert.Null(stepReport.OccurredEvent);
+                    Assert.Equal(card1, mostRecentEventHolder.MostRecentEvent); //Note that event though card1 has already been triggered, nothing cleared it out
+                    Assert.Equal(card2, stepReport.ReactionEvent);
+                } else if (stepsTaken == 7) //Second event triggered
+                {
+                    Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
+                    Assert.Equal(TimelinePhase.PostEffect, stepReport.FinalPhase);
+                    Assert.Equal(0, stepReport.AdvanceAmount); //since they're at the same time, the timeline already rewound
+                    Assert.Equal([], stepReport.EventBackup);
+                    Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                    Assert.Equal(card2, stepReport.OccurredEvent);
+                    Assert.Equal(card2, mostRecentEventHolder.MostRecentEvent);
+                    Assert.Null(stepReport.ReactionEvent);
+                }
+            }
+            Assert.Equal(8, stepsTaken); //If this fails, then we didn't do both events
+            Assert.Equal(TimelinePhase.Display, timeline.Phase);
+        }
+        
+        //Nothing should be different if an event is added during an InstantAction vs already there
+        //This is because once it gets back to PostEffect, the state is the same as after any other action, with the one exception that
+        //events could be pushed forward if an instant action triggered in the past
         #endregion
     }
 }
