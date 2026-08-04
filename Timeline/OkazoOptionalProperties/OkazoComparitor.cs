@@ -10,14 +10,14 @@ namespace Timeline.OkazoOptionalProperties
     internal static class OkazoComparitor<T> where T : INumber<T>
     {
         /// <summary>
-        /// Tiebreaker comparator for IOkazo<T> that tries to use optional properties to compare consistently
+        /// Tiebreaker comparator for Okazo<T> that tries to use optional properties to compare consistently
         /// Should make sure that x!=y and that they both are occuring at the time before calling this.
         /// </summary>
         /// <param name="x">The first event to consider</param>
         /// <param name="y">The second event to consider</param>
         /// <exception cref="ArgumentException">Thrown if there's no order between events that can be determined</exception>
         /// <returns>-1 if x should come before y, 1 if x should come after y, or throws an error if it can't be distinguished.</returns>
-        public static int Compare(IOkazo<T> x, IOkazo<T> y)
+        public static int Compare(Okazo<T> x, Okazo<T> y)
         {
             int ret = 0;
 
@@ -65,6 +65,7 @@ namespace Timeline.OkazoOptionalProperties
             {
                 ret = -okYWithTiebreaker.Tiebreaker(x);
             }
+            if (ret != 0) return ret;
 
             //Eventually, try the UUID, which should be the last tiebreaker.
             if (x is IOkUUID okXWithUUID)
@@ -78,7 +79,7 @@ namespace Timeline.OkazoOptionalProperties
                     //If only x has a UUID, it should come after y, since it has more specific information.
                     ret = 1;
                 }
-            } if (y is IOkUUID)
+            } else if (y is IOkUUID)
             {
                 //If only y has a UUID, it should come after x, since it has more specific information.
                 ret = -1;

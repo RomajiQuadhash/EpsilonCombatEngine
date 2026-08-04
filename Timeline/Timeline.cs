@@ -14,17 +14,17 @@ namespace Timeline
         /// The current list of events on the timeline, sorted by time remaining.
         /// Re-sorted after every time advancement since one or more events may have changed their time remaining, and new events may have been added.
         /// </summary>
-        public List<IOkazo<T>> Events { get; private set; }
+        public List<Okazo<T>> Events { get; private set; }
         /// <summary>
         /// Any events that are at time Never but could occur at some point in the future, so they should be kept track of. This is separate from the main list of events since they don't have a time remaining that can be used to sort them, and they shouldn't be processed until they have a valid time remaining.
         /// </summary>
-        public ISet<IOkazo<T>> PossibleEvents { get; private set; }
+        public ISet<Okazo<T>> PossibleEvents { get; private set; }
         /// <summary>
         /// If an event should occur immediately, this is set to that event so it can be processed in the InstantAction phase. Otherwise, this is null.
         /// Note that only one event can be processed per InstantAction phase, so this isn't a list.
         /// This is because one ReactionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
         /// </summary>
-        public IOkazo<T>? ReactionEvent { get; private set; }
+        public Okazo<T>? ReactionEvent { get; private set; }
 
         /// <summary>
         /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
@@ -45,7 +45,7 @@ namespace Timeline
         public Timeline()
         {
             Events = [];
-            PossibleEvents = new HashSet<IOkazo<T>>();
+            PossibleEvents = new HashSet<Okazo<T>>();
         }
 
         #region Phase Handlers
@@ -86,7 +86,7 @@ namespace Timeline
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
-        public void AddEvent(IOkazo<T> e)
+        public void AddEvent(Okazo<T> e)
         {
             PhaseValid([TimelinePhase.Open]);
             if (e.TimeRemaining.IsNever)
@@ -99,28 +99,30 @@ namespace Timeline
             }
         }
         /// <summary>
-        /// Always adds the event as a possible event. You should only use this for events that are being added as a result of another event, such as a reaction event that is being added during the InstantAction phase. 
+        /// Always adds the event as a possible event. You should only use this for events added during another event, such as:
+        /// *The Zeroed phase, during executing an event, where we want to set up an event caused by the event that just occurred, but we don't know if it will occur immediately or not, so we add it to PossibleEvents and let the InstantActionCheck handle it. (if we know it will occur immediately, we can just do the effects without the timeline)
+        /// *A reaction event that is being added during the InstantAction phase. 
         /// If you're adding an event during the Open phase,you should probably use AddEvent instead, since it will put the event in the correct list based on its time remaining.
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
-        public void AddPossibleEvent(IOkazo<T> e)
+        public void AddPossibleEvent(Okazo<T> e)
         {
-            PhaseValid([TimelinePhase.Open,TimelinePhase.InstantAction]);
+            PhaseValid([TimelinePhase.Open,TimelinePhase.Zeroed,TimelinePhase.InstantAction]);
             PossibleEvents.Add(e);
         }
         /// <summary>
         /// Removes an event from the timeline. Will not unsubscribe the event from the Advance event, so unsubscribe manually if you're not just going to delete the event entirely.
-        /// During InstantAction, only PossibleEvents is checked. This can lead to returning false even if the event is on the timeline
+        /// During InstantAction or Zeroed, only PossibleEvents is checked. This can lead to returning false even if the event is on the timeline
         /// </summary>
         /// <param name="e"></param>
         /// <returns>True if the event was successfully removed; otherwise, false.</returns>
-        public bool RemoveEvent(IOkazo<T> e)
+        public bool RemoveEvent(Okazo<T> e)
         {
-            PhaseValid([TimelinePhase.Open, TimelinePhase.InstantAction]);
-            if(Phase == TimelinePhase.InstantAction)
+            PhaseValid([TimelinePhase.Open, TimelinePhase.InstantAction, TimelinePhase.Zeroed]);
+            if(Phase != TimelinePhase.Open)
             {
-                // During the InstantAction phase, only PossibleEvents can be modified, so only try PossibleEvents.
+                // During the InstantAction or Zeroed phase, only PossibleEvents can be modified, so only try PossibleEvents.
                 return PossibleEvents.Remove(e);
             }
             if (!Events.Remove(e))
@@ -135,7 +137,7 @@ namespace Timeline
         /// If the timeline is terminated, the battle is over, so check the TerminationReason to see how it ended and display the timeline in its final state.
         /// </summary>
         /// <returns>A report for each stage.</returns>
-        internal IEnumerable<StepReport<T>> TakeSteps()
+        public IEnumerable<StepReport<T>> TakeSteps()
         {
             while (Phase != TimelinePhase.Terminated && Phase != TimelinePhase.Display)
             {
@@ -156,7 +158,7 @@ namespace Timeline
                         break;
                     case TimelinePhase.Purged:
                         // Now, sort the events and move to the Sorted phase.
-                        Events.Sort(); // This should sort by time remaining since IOkazo<T> implements IComparable and should be compared by time remaining. No events are Never, so there won't be a NeverIsNotATime exception here.
+                        Events.Sort(); // This should sort by time remaining since Okazo<T> implements IComparable and should be compared by time remaining. No events are Never, so there won't be a NeverIsNotATime exception here.
                         Phase = TimelinePhase.Sorted;
                         break;
                     case TimelinePhase.Sorted:
@@ -194,6 +196,7 @@ namespace Timeline
                             Advance.Invoke(this, ReactionEvent.TimeRemaining.Time); // This should rewind time so the ReactionEvent is at time zero.
                         }
                         ReactionEvent.Trigger();
+                        curReport.OccurredEvent = ReactionEvent;
                         ReactionEvent = null;
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
                         break;
@@ -201,7 +204,7 @@ namespace Timeline
                 Advance -= curReport.OnAdvance; // Unsubscribe the report from the Advance event so it doesn't track time advancements during the next step.
                 curReport.FinalPhase = Phase;
                 curReport.EventBackup = [.. Events];
-                curReport.PossibleEventBackup = new HashSet<IOkazo<T>>(PossibleEvents);
+                curReport.PossibleEventBackup = new HashSet<Okazo<T>>(PossibleEvents);
                 yield return curReport; 
             }
             yield break;
@@ -212,8 +215,8 @@ namespace Timeline
         /// <returns>True if there are events left to process after purging, false otherwise.</returns>
         private bool Purge() {
             //First, clean up possible events, and save any to promote to the main list.
-            List<IOkazo<T>> promotableEvents = [];
-            foreach (IOkazo<T> e in PossibleEvents)
+            List<Okazo<T>> promotableEvents = [];
+            foreach (Okazo<T> e in PossibleEvents)
             {
                 if (e.CouldOccur && e.TimeRemaining.IsNever)
                 {
@@ -257,9 +260,9 @@ namespace Timeline
             }
             // Keep track of the earliest time remaining among the possible events
             TimeOrNever<T> timeToBeat = new();
-            foreach (IOkazo<T> e in PossibleEvents)
+            foreach (Okazo<T> e in PossibleEvents)
             {
-                if (e.TimeRemaining.CompareTo(timeToBeat) > 0)
+                if (e.TimeRemaining.CompareTo(timeToBeat) > 0) //Note that if e.TimeRemaining is Never, then it will be greater than timeToBeat, so we don't need to check for that explicitly.
                 {
                     // If e is later than the timeToBeat, then it is positive, less negative than the current ReactionEvent, or it is never.
                     continue;
@@ -278,11 +281,6 @@ namespace Timeline
             }
             // Remove the ReactionEvent from PossibleEvents, since it's now happening.
             PossibleEvents.Remove(ReactionEvent);
-            // Rewind time so the ReactionEvent is at time zero. (if it's already at time zero, do nothing)
-            if (!T.IsZero(ReactionEvent.TimeRemaining.Time))
-            {
-                Advance?.Invoke(this, ReactionEvent.TimeRemaining.Time);
-            }
             return true;
         }
         #endregion
@@ -299,6 +297,16 @@ namespace Timeline
             {
                 throw new InvalidPhaseForActionException($"Phase must be one of {validPhases} to perform this action. Current phase: {Phase}");
             }
+        }
+        /// <summary>
+        /// Changes the phase of the timeline for debugging purposes. This should only be used in unit tests.
+        /// </summary>
+        /// <param name="newPhase">The phase to set the timeline to. ALWAYS avoid using this if possible</param>
+        /// <exception cref="InvalidOperationException">Always thrown. Catch in unit tests, but don't catch this ever in real code.</exception>
+        public void DebugChangePhase(TimelinePhase newPhase)
+        {
+            Phase = newPhase;
+            throw new InvalidOperationException("DebugChangePhase should only be used for testing purposes. Don't use this in production code.");
         }
         #endregion
 

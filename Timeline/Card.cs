@@ -8,7 +8,7 @@ using Timeline.OkazoOptionalProperties;
 
 namespace Timeline
 {
-    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline) where T : INumber<T>, IFormattable, IOkUUID,IOkPriority,IOkTiebreaker<T>
+    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkUUID, IOkPriority, IOkTiebreaker<T> where T : INumber<T>
     {
         /// <summary>
         /// Priority of this card. If not present, treated as "None". Used as a tiebreaker for cards that occur at the same time. Lower numbers occur first. If this value is before "None", it will occur before any events without a priority. "None" and null are effectively the same, but prefer "None" to make it clear that the event was intentionally given no priority, rather than just forgetting to set a priority.
@@ -25,23 +25,23 @@ namespace Timeline
 
         /// <summary>
         /// Compares this card to another card for equality.
-        /// Checks time, priority, face (if it supports equality), and UUID. If the other card is not a Card<T,F>, returns false.
+        /// Checks time, priority, face (if it supports equality), and UUID.
+        /// If two cards aren't the same type or the other is null, always false.
         /// </summary>
         /// <param name="other">Other card.</param>
         /// <returns>True if the cards are equal, false otherwise.</returns>
-        public override bool Equals(IOkazo<T>? other)
+        public override bool Equals(Okazo<T>? other)
         {
-            if (other is Card<T,F> otherCard)
-            {
-                if (TimeToEvent != otherCard.TimeToEvent)
-                    return false;
-                if (Priority != otherCard.Priority)
-                    return false;
-                if (Face is IEquatable<F> equatableFace && !equatableFace.Equals(otherCard.Face))
-                    return false;
-                return UUID == otherCard.UUID;
-            }
-            return false;
+            if (other is null || other.GetType() != this.GetType())
+                return false;
+            Card<T, F> otherCard = (Card<T, F>)other;
+            if (TimeToEvent != otherCard.TimeToEvent)
+                return false;
+            if (Priority != otherCard.Priority)
+                return false;
+            if (Face is IEquatable<F> equatableFace && !equatableFace.Equals(otherCard.Face))
+                return false;
+            return UUID == otherCard.UUID;
         }
 
         public override string ToString()
@@ -50,13 +50,9 @@ namespace Timeline
             if (Face is null)
             {
                 faceData +=" that is null";
-            } else if (Face is IFormattable or string)
+            } else
             {
                 faceData += $" has data:{Face}";
-            }
-            else
-            {
-                faceData += " that is not null but not printable";
             }
             return $"Card (UUID:{UUID}) with TimeToEvent: {TimeToEvent}, priority {Priority} and " + faceData;
         }
@@ -64,9 +60,9 @@ namespace Timeline
         /// <summary>
         /// Tries to tiebreak this card against another card after any standard comparisons (time, priority), but before last ditch comparisons (UUID)
         /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        public int Tiebreaker(IOkazo<T> other)
+        /// <param name="other">Another event. If not a Card with the same face type, the tiebreaker will not be applied.</param>
+        /// <returns>negative if should come before other, 0 if inconclusive, positive if should come after other</returns>
+        public int Tiebreaker(Okazo<T> other)
         {
             if (other is Card<T, F> otherCard)
             {
