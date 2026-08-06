@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreMetrics", "CoreMetrics\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Timeline-Test", "Timeline-Test\Timeline-Test.csproj", "{95E857B0-67A5-A048-0827-2EA94803C2D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meters", "Meters\Meters.csproj", "{66C47F2F-5F9A-4659-B72A-DB41AF85574D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{95E857B0-67A5-A048-0827-2EA94803C2D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{95E857B0-67A5-A048-0827-2EA94803C2D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{95E857B0-67A5-A048-0827-2EA94803C2D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
