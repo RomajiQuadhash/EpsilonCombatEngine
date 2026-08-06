@@ -3,6 +3,7 @@
 namespace CoreMetrics
 {
 	/// <summary>
+    /// TODO: Figure out if this should exist or we should just use the Meter project's meters. Possibly usable in a Meter where both types are the same?
 	/// This class keeps track of a value that may change over time.
 	/// A counter can also tell how long until it passes a threshold or how far in the past that threshold was crossed.
 	/// This only works if the counter is linear over that time, however!
