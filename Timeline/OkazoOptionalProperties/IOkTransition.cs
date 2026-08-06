@@ -11,7 +11,7 @@ namespace Timeline.OkazoOptionalProperties
     /// For events triggered by crossing a threshold.
     /// See the TransitionData class for more information on the data used in comparison.
     /// </summary>
-    internal interface IOkTransition<T> where T : INumber<T>
+    public interface IOkTransition<T> where T : INumber<T>
     {
         public TransitionData<T> TransitionData { get; }
     }

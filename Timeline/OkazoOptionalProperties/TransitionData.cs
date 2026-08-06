@@ -17,7 +17,7 @@ namespace Timeline.OkazoOptionalProperties
     /// 4. Largest progressive change at the time of crossing
     /// </summary>
     /// <typeparam name="T">The numeric type used for the metric. Assumed to be able to hold fractional values</typeparam>
-    internal class TransitionData<T>: IComparable<TransitionData<T>> where T : INumber<T> 
+    public class TransitionData<T>: IComparable<TransitionData<T>> where T : INumber<T> 
     {
         /// <summary>
         /// The value before crossing the threshold. Always <=0, with 0 meaning no instant change.
