@@ -37,10 +37,15 @@ namespace Timeline.OkazoOptionalProperties
             }
             if (ret != 0) return ret;
 
-            //Then, transition data. Unlike priority, both need to have transition data for it to be a valid tiebreaker
-            if (x is IOkTransition<T> okXWithTransition && y is IOkTransition<T> okYWithTransition)
+            // Then, transition data. Both need to have transition data of the SAME type
+            if (TryGetTransitionType(x, out Type? xTransitionType) &&
+                TryGetTransitionType(y, out Type? yTransitionType) &&
+                xTransitionType == yTransitionType)
             {
-                ret = okXWithTransition.TransitionData.CompareTo(okYWithTransition.TransitionData);
+                //Since we don't know the type at compile time, we have to use dynamic to call CompareTo.
+                dynamic xOk = x;
+                dynamic yOk = y;
+                ret = xOk.TransitionData.CompareTo(yOk.TransitionData);
                 if (ret != 0) return ret;
             }
             //Put new properties here.
@@ -86,6 +91,31 @@ namespace Timeline.OkazoOptionalProperties
             }
             if (ret != 0) return ret;
             throw new ArgumentException("Two events can't be compared but are not equal.");
+        }
+        /// <summary>
+        /// Attempts to retrieve the generic type argument from an IOkTransition<> interface implemented by the
+        /// specified object. Should only be used on Okazo<T> objects, as they are the only ones that should implement IOkTransition<>,
+        /// but we shouldn't be here if they aren't Okazo<T> objects since this is a private method.
+        /// </summary>
+        /// <param name="obj">The object to inspect for an IOkTransition<> implementation.</param>
+        /// <param name="transitionType">When this method returns, contains the transition type if found; otherwise, null.</param>
+        /// <returns>true if the transition type was successfully retrieved; otherwise, false.</returns>
+        private static bool TryGetTransitionType(object obj, out Type? transitionType)
+        {
+            transitionType = null;
+
+            var transitionInterface = obj.GetType()
+                .GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType &&
+                                    i.GetGenericTypeDefinition() == typeof(IOkTransition<>));
+
+            if (transitionInterface != null)
+            {
+                transitionType = transitionInterface.GetGenericArguments()[0];
+                return true;
+            }
+
+            return false;
         }
     }
 }
