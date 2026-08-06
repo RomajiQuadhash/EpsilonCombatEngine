@@ -16,26 +16,30 @@ namespace Timeline.OkazoOptionalProperties
     /// 3. Furthest behind the threshold before the crossing
     /// 4. Largest progressive change at the time of crossing
     /// </summary>
-    /// <typeparam name="T">The numeric type used for the metric. Assumed to be able to hold fractional values</typeparam>
+    /// <typeparam name="T">The numeric type used for the metric. Note that this will be multiplied by other ranges, so make sure that'll fit in the scaling of types</typeparam>
     public class TransitionData<T>: IComparable<TransitionData<T>> where T : INumber<T> 
     {
         /// <summary>
         /// The value before crossing the threshold. Always <=0, with 0 meaning no instant change.
         /// If it is negative, this is the amount behind the threshold the meter was before crossing the threshold.
-        /// Scaled down by the range, so -1 means the prior value was one end of the range with the threshold at the other.
+        /// Not scaled down by the range, so - range is going from one end of the range to the other.
         /// </summary>
         public T Before { get; private set; }
         /// <summary>
         /// The value after crossing the threshold. Always >=0, with 0 meaning no instant change.
         /// If it is positive, this is the amount past the threshold the meter was after crossing the threshold.
-        /// Scaled down by the range, so each 1 is a range worth of overshoot.
+        /// Not scaled down by the range so range is the max value and a range worth of overshoot.
         /// </summary>
         public T After { get; private set; }
         /// <summary>
-        /// What the progressive change of the meter was at the time of crossing the threshold, scaled down by the range. So each 1 is a range worth of change per time unit.
+        /// What the progressive change of the meter was at the time of crossing the threshold, not scaled down by the range.
         /// Usually positive, but could be negative if an instant change went in the opposite direction of the progressive change.
         /// </summary>
         public T ProgressiveChange { get; private set; }
+        /// <summary>
+        /// The range of the meter, used to compare with other values
+        /// </summary>
+        public T Range { get; private set; }
         /// <summary>
         /// Converts the raw data about a threshold crossing into standard values to compare.
         /// </summary>
@@ -52,10 +56,13 @@ namespace Timeline.OkazoOptionalProperties
             {
                 throw new ArgumentException("Range must be greater than zero", nameof(range));
             }
+            //Range will always be set, so do it before the if statements to avoid having to set it in multiple places.
+            Range = range;
+
             if (instantChange == T.Zero)
             {
                 //No instant change, so just absolute value the progressive change and scale by the range.
-                ProgressiveChange = T.Abs(progressiveChange) / range;
+                ProgressiveChange = T.Abs(progressiveChange);
                 Before=T.Zero;
                 After=T.Zero;
                 return;
@@ -72,9 +79,9 @@ namespace Timeline.OkazoOptionalProperties
             {
                 throw new InvalidOperationException("After value didn't cross the threshold");
             }
-            After = (after-threshold)/range;
-            Before = After-(instantChange)/range;
-            ProgressiveChange = progressiveChange/range;
+            After = (after-threshold);
+            Before = After-(instantChange);
+            ProgressiveChange = progressiveChange;
         }
 
         public int CompareTo(TransitionData<T>? other)
@@ -89,39 +96,56 @@ namespace Timeline.OkazoOptionalProperties
             {
                 return -1;
             }
+            //We'll need these scaled to the same range regardless of whether they overshot or not, so scale them to the other range for comparison.
+            T beforeScaledToOtherRange = Before * other.Range;
+            T otherBeforeScaledToThisRange = other.Before * Range;
             //Now, both are either overshooting or not. First, handle if both are overshooting
             if (After > T.Zero && other.After > T.Zero)
             {
-                T thisRatio = After /(After-Before);
-                T otherRatio = other.After /(other.After-other.Before);
-                if (thisRatio < otherRatio)
+                //Note that we don't have the two values scaled to the same range, so we need to scale them to the same range before comparing.
+                //To avoid requiring fractional math, we can just cross multiply to compare.
+                T afterScaledToOtherRange = After * other.Range;
+                T otherAfterScaledToThisRange = other.After * Range;
+                
+                //Instead of computing ratios, we can just cross multiply to avoid needing fractional math.
+                T thisAfterByOtherDifference = afterScaledToOtherRange * (otherAfterScaledToThisRange - otherBeforeScaledToThisRange);
+                T otherAfterByThisDifference = otherAfterScaledToThisRange * (afterScaledToOtherRange - beforeScaledToOtherRange);
+                //It's like we multiplied both sides of the ratio comparison by the denominators,
+                //So we can just compare them
+                if (thisAfterByOtherDifference < otherAfterByThisDifference)
                 {
                     return 1;
-                } else if (thisRatio > otherRatio)
+                } else if (thisAfterByOtherDifference > otherAfterByThisDifference)
                 {
                     return -1;
                 }
-                //If the ratios are the same, try the one with the larger raw overshoot
-                if (After < other.After)
+                //If the ratios are the same, try the one with the larger scaled overshoot
+                if (afterScaledToOtherRange < otherAfterScaledToThisRange)
                 {
                     return 1;
-                } else if (After > other.After)
+                } else if (afterScaledToOtherRange > otherAfterScaledToThisRange)
                 {
                     return -1;
                 }
-                //Finally, return the comparison of the progressive changes, with larger progressive change being prioritized
-                return other.ProgressiveChange.CompareTo(ProgressiveChange);
+                //We'll compare the progressive changes outside of this if-else block, so we don't need to do it here.
             }
-            //Both are not overshooting, so prioritize the one with the smaller before value, as that means the change was larger
-            if (Before < other.Before)
+            else
             {
-                return -1;
-            } else if (Before > other.Before)
-            {
-                return 1;
+                //Both are not overshooting, so prioritize the one with the smaller before value, as that means the change was larger
+                if (beforeScaledToOtherRange < otherBeforeScaledToThisRange)
+                {
+                    return -1;
+                }
+                else if (beforeScaledToOtherRange > otherBeforeScaledToThisRange)
+                {
+                    return 1;
+                }
             }
-            //Finally, return the comparison of the progressive changes, with larger progressive change being prioritized
-            return other.ProgressiveChange.CompareTo(ProgressiveChange);
+            
+            //Finally, if all else is equal, prioritize the one with the larger scaled progressive change
+            T progressiveChangeScaledToOtherRange = ProgressiveChange * other.Range;
+            T otherProgressiveChangeScaledToThisRange = other.ProgressiveChange * Range;
+            return otherProgressiveChangeScaledToThisRange.CompareTo(progressiveChangeScaledToOtherRange);
         }
     }
 }
