@@ -51,7 +51,7 @@ namespace Timeline.OkazoOptionalProperties
         //Lose before win as winning shouldn't be allowed to make people survive when they shouldn't
         InstantLoss,
 
-        PlayerBleedStop, // If a player stops bleeding, their min HP should be set to 0, before they can die from having too negative HP.
+        PlayerBleedEnd, // If a player stops (end used for consistency with later) bleeding, their min HP should be set to 0, before they can die from having too negative HP.
         PlayerDeath,
         PlayerBleedStart, // If a player starts bleeding, their min HP should be set to negative, before being capped at 0 and normal KOed
         PlayerKO,
@@ -64,7 +64,7 @@ namespace Timeline.OkazoOptionalProperties
 
         InstantWin,
         //Same order for enemies
-        EnemyBleedStop,
+        EnemyBleedEnd,
         EnemyDeath,
         EnemyBleedStart,
         EnemyKO,
