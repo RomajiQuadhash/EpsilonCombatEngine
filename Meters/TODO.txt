@@ -3,3 +3,4 @@
 2. Determine if we need a class for uncapped values (probably not)
 3. Implement ThresholdEvents for a variety of situations
 4. Determine if we need a threshold event that's only triggered when going in a certain direction (probably not, since we should know what side we are during creation)
+5. Create temp changes that can actually modify meters
