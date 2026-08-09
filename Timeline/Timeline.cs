@@ -14,11 +14,19 @@ namespace Timeline
         /// The current list of events on the timeline, sorted by time remaining.
         /// Re-sorted after every time advancement since one or more events may have changed their time remaining, and new events may have been added.
         /// </summary>
-        public List<Okazo<T>> Events { get; private set; }
+        public List<Okazo<T>> Events { get => _Events; private set { _Events = value; } }
+        /// <summary>
+        /// Direct access for ref function to Events
+        /// </summary>
+        private List<Okazo<T>> _Events;
         /// <summary>
         /// Any events that are at time Never but could occur at some point in the future, so they should be kept track of. This is separate from the main list of events since they don't have a time remaining that can be used to sort them, and they shouldn't be processed until they have a valid time remaining.
         /// </summary>
-        public ISet<Okazo<T>> PossibleEvents { get; private set; }
+        public ISet<Okazo<T>> PossibleEvents { get => _PossibleEvents; private set { _PossibleEvents = value; } }
+        /// <summary>
+        /// Direct access for ref function to PossibleEvents
+        /// </summary>
+        private ISet<Okazo<T>> _PossibleEvents;
         /// <summary>
         /// If an event should occur immediately, this is set to that event so it can be processed in the InstantAction phase. Otherwise, this is null.
         /// Note that only one event can be processed per InstantAction phase, so this isn't a list.
@@ -44,8 +52,8 @@ namespace Timeline
         public TerminationType TerminationReason { get; private set; }
         public Timeline()
         {
-            Events = [];
-            PossibleEvents = new HashSet<Okazo<T>>();
+            _Events = [];
+            _PossibleEvents = new HashSet<Okazo<T>>();
         }
 
         #region Phase Handlers
@@ -214,38 +222,9 @@ namespace Timeline
         /// </summary>
         /// <returns>True if there are events left to process after purging, false otherwise.</returns>
         private bool Purge() {
-            //First, clean up possible events, and save any to promote to the main list.
-            List<Okazo<T>> promotableEvents = [];
-            foreach (Okazo<T> e in PossibleEvents)
-            {
-                if (e.CouldOccur && e.TimeRemaining.IsNever)
-                {
-                    // If the event could occur but is still at Never, keep it in PossibleEvents and move on.
-                    continue;
-                }
-                if (!e.TimeRemaining.IsNever)
-                {
-                    promotableEvents.Add(e);
-                }
-                // Always remove events that couldn't occur or are no longer at never, since they shouldn't be in PossibleEvents.
-                PossibleEvents.Remove(e);
-            }
-            // Now, add move any Never events from the main list to PossibleEvents, unless they could never occur, in which case we can just delete them.
-            for (int i = Events.Count - 1; i >= 0; i--)
-            {
-                if (Events[i].TimeRemaining.IsNever)
-                {
-                    if (Events[i].CouldOccur)
-                    {
-                        PossibleEvents.Add(Events[i]);
-                    }
-                    Events.RemoveAt(i);
-                }
-            }
-            // Finally, add any promotable events to the main list.
-            // These will be sorted in the next phase, so we don't need to worry about sorting them now.
-            Events.AddRange(promotableEvents);
-            return Events.Count!=0;
+            //Refactor into using the values directly and calling a public static function
+            //This way it does the same thing as simulating purging, but to the actual values
+            return Timeline<T>.SimulatePurge(ref _Events, ref _PossibleEvents);
         }
         /// <summary>
         /// Finds if any of the possible events should occur immediately, and if so, sets the ReactionEvent to the earliest of these events, removes it from PossibleEvents, and rewinds time so this event is at time zero.
@@ -309,7 +288,51 @@ namespace Timeline
             throw new InvalidOperationException("DebugChangePhase should only be used for testing purposes. Don't use this in production code.");
         }
         #endregion
-
+        #region Static Public Helper(s)
+        //It is occasionally useful to simulate the functionality of a phase or phases without actually running that phase.
+        //These methods help with that
+        /// <summary>
+        /// Simulates the events of the Purge phase on a list of events and set of possible events.
+        /// Actually called by Purge, so behavior guarenteed to be identical
+        /// </summary>
+        /// <remarks>Useful to use when displaying from the StepReport, to see what the clean timeline "would be"</remarks>
+        /// <param name="events">List of events that should be considered the timeline</param>
+        /// <param name="possibleEvents">Set of events to possibly add to events.</param>
+        /// <returns>True if there's at least one event left in Events</returns>
+        public static bool SimulatePurge(ref List<Okazo<T>> events, ref ISet<Okazo<T>> possibleEvents)
+        {
+            List<Okazo<T>> promotableEvents = [];
+            foreach (Okazo<T> e in possibleEvents)
+            {
+                if (e.CouldOccur && e.TimeRemaining.IsNever)
+                {
+                    // If the event could occur but is still at Never, keep it in possibleEvents and move on.
+                    continue;
+                }
+                if (!e.TimeRemaining.IsNever)
+                {
+                    promotableEvents.Add(e);
+                }
+                //Remove events that are never and can't occur
+                possibleEvents.Remove(e);
+            }
+            //Before adding the promotable events, remove any Never events from events (and put them in possibleEvents if possible)
+            for (int i = events.Count - 1; i >= 0; i--)
+            {
+                if (events[i].TimeRemaining.IsNever)
+                {
+                    if (events[i].CouldOccur)
+                    {
+                        possibleEvents.Add(events[i]);
+                    }
+                    events.RemoveAt(i);
+                }
+            }
+            //Finally, add any promotable events to events. Sorting will occur later
+            events.AddRange(promotableEvents);
+            return events.Count != 0;
+        }
+        #endregion
     }
     /// <summary>
     /// What state the timeline is in, which determines what happens when Update is called and what actions are allowed.
