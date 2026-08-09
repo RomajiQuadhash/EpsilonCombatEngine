@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Timeline-Test", "Timeline-T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meters", "Meters\Meters.csproj", "{66C47F2F-5F9A-4659-B72A-DB41AF85574D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Combatants", "Combatants\Combatants.csproj", "{D04D33F7-9745-4AD4-8255-FF9B5E859DFB}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 	ProjectSection(SolutionItems) = preProject
 		CombatNotes.md = CombatNotes.md
@@ -44,6 +46,10 @@ Global
 		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66C47F2F-5F9A-4659-B72A-DB41AF85574D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D04D33F7-9745-4AD4-8255-FF9B5E859DFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D04D33F7-9745-4AD4-8255-FF9B5E859DFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D04D33F7-9745-4AD4-8255-FF9B5E859DFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D04D33F7-9745-4AD4-8255-FF9B5E859DFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
