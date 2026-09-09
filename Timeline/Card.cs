@@ -8,6 +8,14 @@ using Timeline.OkazoOptionalProperties;
 
 namespace Timeline
 {
+    /// <summary>
+    /// Useful for events that always will happen and storing some useful data.
+    /// </summary>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
+    /// <typeparam name="F">Type of the data stored on the card</typeparam>
+    /// <param name="timeToEvent">How far in the future this card is</param>
+    /// <param name="owningTimeline">What timeline this Card should be owned by</param>
+    /// <param name="priority">The priority of this card</param>
     public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkUUID, IOkPriority, IOkTiebreaker<T> where T : INumber<T>
     {
         /// <summary>
