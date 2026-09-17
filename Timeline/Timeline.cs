@@ -190,7 +190,7 @@ namespace Timeline
                         }
                         else
                         {
-                            Phase = TimelinePhase.Display;
+                            Phase = TimelinePhase.Cleaning;
                         }
                         break;
                     case TimelinePhase.InstantAction:
@@ -206,7 +206,16 @@ namespace Timeline
                         InstantActionEvent.Trigger();
                         curReport.OccurredEvent = InstantActionEvent;
                         InstantActionEvent = null;
-                        Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
+                        Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Cleaning.
+                        break;
+                    case TimelinePhase.Cleaning:
+                        //Clean up the timeline, move all events that should be on the timeline from PossibleEvents to Events,
+                        //move any events that are Never to PossibleEvents, and finally sort Events.
+                        //Note that CouldOccur is NOT checked, since it is possible while in Open they become valid to occur.
+                        //If they remain unable to occur, they will be removed in the next Purge phase.
+                        //If that's too late, well, they can be removed manually during Open phase.
+                        Clean();
+                        Phase = TimelinePhase.Display;
                         break;
                 }
                 Advance -= curReport.OnAdvance; // Unsubscribe the report from the Advance event so it doesn't track time advancements during the next step.
@@ -268,6 +277,37 @@ namespace Timeline
             // Remove the InstantActionEvent from PossibleEvents, since it's now happening.
             PossibleEvents.Remove(InstantActionEvent);
             return true;
+        }
+
+        /// <summary>
+        /// Cleans up the events by promoting any promotable events from PossibleEvents to Events, sorting Events, and demoting any events that are at Never back to PossibleEvents.
+        /// </summary>
+        private void Clean()
+        {
+            //Since we'll be sorting the events, we'll add the promoted events while looking through PossibleEvents, and then sort at the end.
+            //Since any event that is at Never can't be sorted, we'll move them out first.
+            HashSet<Okazo<T>> DemotedEvents = [];
+            for (int i = Events.Count - 1; i >= 0; i--)
+            {
+                if (Events[i].TimeRemaining.IsNever)
+                {
+                    DemotedEvents.Add(Events[i]);
+                    Events.RemoveAt(i);
+                }
+            }
+            //Before adding the demoted events, remove any not Never events from PossibleEvents and add them to Events
+            foreach (Okazo<T> e in PossibleEvents)
+            {
+                if (!e.TimeRemaining.IsNever)
+                {
+                    Events.Add(e);
+                    PossibleEvents.Remove(e);
+                }
+            }
+            //Sort the events now that we've added any promotable events to the main list
+            Events.Sort();
+            //Finally, add the Demoted Events back to PossibleEvents so we don't lose them.
+            PossibleEvents.UnionWith(DemotedEvents);
         }
         #endregion
 
@@ -350,9 +390,10 @@ namespace Timeline
         Purged, // Any event that is not Never among Events and PossibleEvents is in Events, and all events in PossibleEvents are Never.
         Sorted, // All events in Events are sorted by time remaining.
         Zeroed, // The next event to occur is at time zero, and all events that are at time zero are at the front of the list in some deterministic order.
-        PostEffect, // An event has just occurred, either from the main list or as an instant action, but we haven't checked for any consequences of this event yet. This is where we check for any events that should occur immediately as a result of this event, and if there are any, we move to the InstantAction phase to do them before moving to Display.
+        PostEffect, // An event has just occurred, either from the main list or as an instant action, but we haven't checked for any consequences of this event yet. This is where we check for any events that should occur immediately as a result of this event, and if there are any, we move to the InstantAction phase to do them before moving to Cleaning.
         InstantAction, // Only reached if a Possible Event becomes 0 or negative during the PostEffect phase. Time is rewound so the earliest of these events is at time zero, and all events that are at time zero are at the front of the list in some deterministic order. Returns to PostEffect after this.
-        Display, // After PostEffect and any InstantAction phases are complete, the timeline is ready for display. A visual representation of the timeline should be generated at this point, and any events that are at time zero should be highlighted as occurring now. Set back to Open after this.
+        Cleaning, // After PostEffect and any InstantAction phases are complete, get the timeline ready for display. Sort out Events and PossibleEvents, and remove any events that are Never and can't occur. Goes to Display
+        Display, // After Cleaning, the timeline is ready for display. A visual representation of the timeline should be generated at this point, and any events that are at time zero should be highlighted as occurring now. Set back to Open after this.
         Terminated = 255 // The battle is over, so the timeline is terminated. No events should be added or processed at this point, and the timeline should be displayed in its final state.
     }
     /// <summary>
