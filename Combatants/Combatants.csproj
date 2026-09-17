@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Meters\Meters.csproj" />
+    <ProjectReference Include="..\Timeline\Timeline.csproj" />
+  </ItemGroup>
+
 </Project>
