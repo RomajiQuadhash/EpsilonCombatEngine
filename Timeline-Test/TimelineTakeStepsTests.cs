@@ -461,7 +461,7 @@ namespace Timeline_Test
                 Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(5, stepsTaken);
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken five steps, so the timeline should now be in Display phase since there are no more events to process.
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);//We have taken five steps, so the timeline should now be in Cleaning phase since there are no more events to process.
         }
         [Fact(DisplayName = "If there are multiple events in the Events list, they are preserved")]
         public void ZeroedToPostEffectMultipleEvents()
@@ -495,9 +495,9 @@ namespace Timeline_Test
                 Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(5, stepsTaken);
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken five steps, so the timeline
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);//We have taken five steps, so the timeline should now be in Cleaning phase since there are no more events to process.
         }
-        [Fact(DisplayName = "If there are events in PossibleEvents (that occur never/after 0) they are kept and sent to Display phase")]
+        [Fact(DisplayName = "If there are events in PossibleEvents (that occur never/after 0) they are kept and sent to Cleaning phase")]
         public void ZeroedToPostEffectPossibleEventsKept()
         {
             Timeline<int> timeline = new();
@@ -530,13 +530,13 @@ namespace Timeline_Test
                 Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(5, stepsTaken);
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken five steps, so the timeline should now be in Display phase since there are no more events to process.
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);//We have taken five steps, so the timeline should now be in Cleaning phase since there are no more events to process.
         }
         #endregion
         #region InstantAction "loop" tests
         //This region will be filled with making sure Instant Actions occur appropriately, in an appropriate sequence, and don't trigger anything else
         //This will test both that the events are triggered in the correct order and that multiple events are only all triggered if they occur concurrently.
-        [Fact(DisplayName ="If there's one PossibleEvent and it has time remaining 0, then PostEffect -> InstantAction (event is triggered) -> PostEffect -> Display")]
+        [Fact(DisplayName ="If there's one PossibleEvent and it has time remaining 0, then PostEffect -> InstantAction (event is triggered) -> PostEffect -> Cleaning")]
         public void InstantActionSingleEvent()
         {
             Timeline<int> timeline = new();
@@ -572,9 +572,13 @@ namespace Timeline_Test
                     Assert.Equal(possibleEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
                     Assert.Null(stepReport.InstantActionEvent);
                 }
+                else if (stepsTaken == 6)
+                {
+                    break; //This should be the PostEffect -> Cleaning step, testing Cleaning later
+                }
             }
-            Assert.Equal(6, stepsTaken); //Should have taken 6 steps to reach Display and should break once it does
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken six steps, so the timeline should now be in Display phase since there are no more events to process.
+            Assert.Equal(6, stepsTaken); //Should have taken 6 steps to reach Cleaning and should break once it does
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);//We have taken six steps, so the timeline should now be in Cleaning phase since there are no more events to process.
         }
         [Fact(DisplayName = "If the PossibleEvent in InstantActionSingleEvent is in the past, time is rewound in InstantAction")]
         public void InstantActionSingleEventInPast()
@@ -612,9 +616,13 @@ namespace Timeline_Test
                     Assert.Equal(possibleEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
                     Assert.Null(stepReport.InstantActionEvent);
                 }
+                else if (stepsTaken == 6)
+                {
+                    break; //This should be the PostEffect -> Cleaning step, testing Cleaning later
+                }
             }
             Assert.Equal(6, stepsTaken);
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken six steps, so the timeline should now be in Display phase since there are no more events to process.
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);//We have taken six steps, so the timeline should now be in Cleaning phase since there are no more events to process.
         }
         [Fact(DisplayName ="If there are two possible events and one is more negative than the other, only the most negative occurs as an InstantAction")]
         public void InstantActionTwoEventsOneTrigger()
@@ -658,9 +666,13 @@ namespace Timeline_Test
                     Assert.Equal(earliestEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
                     Assert.Null(stepReport.InstantActionEvent);
                 }
+                else if (stepsTaken == 6)
+                {
+                    break; //This should be the PostEffect -> Cleaning step, testing Cleaning later
+                }
             }
             Assert.Equal(6, stepsTaken); //If this fails, then we did both events instead of just one
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);
         }
         [Fact(DisplayName ="If there are two possible events that share a time, PostEffect -> InstantAction -> PostEffect loops, doing them in sort order")]
         public void InstantActionMultipleTrigger()
@@ -727,9 +739,13 @@ namespace Timeline_Test
                     Assert.Equal(card2, mostRecentEventHolder.MostRecentEvent);
                     Assert.Null(stepReport.InstantActionEvent);
                 }
+                else if (stepsTaken == 8) //This should be the PostEffect -> Cleaning step, testing Cleaning later
+                {
+                    break;
+                }
             }
             Assert.Equal(8, stepsTaken); //If this fails, then we didn't do both events
-            Assert.Equal(TimelinePhase.Display, timeline.Phase);
+            Assert.Equal(TimelinePhase.Cleaning, timeline.Phase);
         }
         
         //Nothing should be different if an event is added during an InstantAction vs already there
