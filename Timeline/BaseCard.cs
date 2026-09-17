@@ -20,6 +20,7 @@ namespace Timeline
         /// A card can always occur, since it is about a specific time in the future.
         /// </summary>
         public override bool CouldOccur { get => true; set { throw new InvalidOperationException("A BaseCard always can occur."); } }
+        public override bool HaltsInstantAction { get; set; } = false;
         /// <summary>
         /// The actual time until this event occurs. 
         /// Used to calculate the TimeRemaining, should be used instead of TimeRemaining whenever possible.

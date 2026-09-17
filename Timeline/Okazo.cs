@@ -26,6 +26,12 @@ namespace Timeline
         /// Only matters if TimeRemaining is Never. If true, this event could occur at some point in the future so it should be kept track of, but if false, this event will never occur and can be safely discarded.
         /// </summary>
         public abstract bool CouldOccur { get; set; }
+        /// <summary>
+        /// If true, if this event would be an Instant Action, it instead makes the timeline move on to cleanup/display.
+        /// This is useful if the event would set who should choose actions next, since the impacts of choosing that action
+        /// would likely add events to the timeline and that can only be fully done in Open phase.
+        /// </summary>
+        public abstract bool HaltsInstantAction { get; set; }
 
         /// <summary>
         /// Compares the current instance with another Okazo<T> object and returns an integer that indicates their
