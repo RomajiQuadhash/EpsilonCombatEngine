@@ -227,7 +227,7 @@ namespace Timeline
             return Timeline<T>.SimulatePurge(ref _Events, ref _PossibleEvents);
         }
         /// <summary>
-        /// Finds if any of the possible events should occur immediately, and if so, sets the InstantActionEvent to the earliest of these events, removes it from PossibleEvents, and rewinds time so this event is at time zero.
+        /// Finds if any of the possible events should occur immediately, and if so, sets the InstantActionEvent to the earliest of these events, and removes it from PossibleEvents.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown if there is already an instant action to process.</exception>
         /// <returns>True if an action was found and set as the InstantActionEvent, false otherwise.</returns>
