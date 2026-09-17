@@ -47,7 +47,7 @@ namespace Timeline_Test
                 Assert.Equal([], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(1, stepsTaken);
             Assert.Equal(TimelinePhase.Terminated, timeline.Phase);
@@ -76,7 +76,7 @@ namespace Timeline_Test
                 Assert.Equal([], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(1, stepsTaken);
             Assert.Equal(TimelinePhase.Terminated, timeline.Phase);
@@ -105,7 +105,7 @@ namespace Timeline_Test
                 Assert.Equal([], stepReport.EventBackup);
                 Assert.Equal(expectedPossibleEvents, stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(1, stepsTaken);
             Assert.Equal(TimelinePhase.Terminated, timeline.Phase);
@@ -135,7 +135,7 @@ namespace Timeline_Test
                 Assert.Equal([validEvent], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(2, stepsTaken);
             Assert.Equal(TimelinePhase.Sorted, timeline.Phase); //We have taken two steps, so the timeline should now be in the Sorted phase.
@@ -162,7 +162,7 @@ namespace Timeline_Test
                 Assert.Equal([validPossibleEvent], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(2, stepsTaken);
             Assert.Equal(TimelinePhase.Sorted, timeline.Phase);//We have taken two steps, so the timeline should now be in the Sorted phase.
@@ -193,7 +193,7 @@ namespace Timeline_Test
                 Assert.Equal([validEvent, validPossibleEvent], stepReport.EventBackup); //Both events will happen, and they won't be sorted yet, so possible events will be at the back of the list.
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(2, stepsTaken);
             Assert.Equal(TimelinePhase.Sorted, timeline.Phase);//We have taken two steps, so the timeline should now be in the Sorted phase.
@@ -222,7 +222,7 @@ namespace Timeline_Test
                 Assert.Equal([validPossibleEvent], stepReport.EventBackup); //Only the valid event should be promoted to Events.
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(2, stepsTaken);
             Assert.Equal(TimelinePhase.Sorted, timeline.Phase);//We have taken two steps, so the timeline should now be in the Sorted phase.
@@ -253,7 +253,7 @@ namespace Timeline_Test
                 Assert.Equal([validEvent], stepReport.EventBackup); //Only the valid event should remain in Events.
                 Assert.Equal(new HashSet<Okazo<int>>() {invalidEvent}, stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(2, stepsTaken);
             Assert.Equal(TimelinePhase.Sorted, timeline.Phase);//We have taken two steps, so the timeline should now be in the Sorted phase.
@@ -286,7 +286,7 @@ namespace Timeline_Test
                 Assert.Equal([validEvent1, validEvent2], stepReport.EventBackup); //Both valid events should remain in Events.
                 Assert.Equal(new HashSet<Okazo<int>>() { invalidEvent1}, stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(2, stepsTaken);
             Assert.Equal(TimelinePhase.Sorted, timeline.Phase);//We have taken two steps, so the timeline should now be in the Sorted phase.
@@ -321,7 +321,7 @@ namespace Timeline_Test
                 Assert.Equal([event1, event2, event3], stepReport.EventBackup); //Events should be sorted from soonest to latest.
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(3, stepsTaken);
             Assert.Equal(TimelinePhase.Zeroed, timeline.Phase);//We have taken three steps, so the timeline should now be in the Zeroed phase.
@@ -352,7 +352,7 @@ namespace Timeline_Test
                 Assert.Equal([validEvent], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>() { validPossibleEvent }, stepReport.PossibleEventBackup); //Possible events should remain unaffected.
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(3, stepsTaken);
             Assert.Equal(TimelinePhase.Zeroed, timeline.Phase);//We have taken three steps, so the timeline should now be in the Zeroed phase.
@@ -383,7 +383,7 @@ namespace Timeline_Test
                 Assert.Equal([validEvent], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(4, stepsTaken);
             Assert.Equal(TimelinePhase.PostEffect, timeline.Phase);//We have taken four steps, so the timeline should now be in the PostEffect phase.
@@ -424,7 +424,7 @@ namespace Timeline_Test
                 Assert.Equal([event1, event2, event3], stepReport.EventBackup);
                 Assert.Equal(new HashSet<Okazo<int>>() { possibleEvent, neverEvent }, stepReport.PossibleEventBackup);
                 Assert.Null(stepReport.OccurredEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(4, stepsTaken);
             Assert.Equal(TimelinePhase.PostEffect, timeline.Phase);//We have taken four steps, so the timeline should now be in PostEffect
@@ -458,7 +458,7 @@ namespace Timeline_Test
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Equal(validEvent, stepReport.OccurredEvent); //The event should have been reported as occurred.
                 Assert.Equal(validEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered.
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(5, stepsTaken);
             Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken five steps, so the timeline should now be in Display phase since there are no more events to process.
@@ -492,7 +492,7 @@ namespace Timeline_Test
                 Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                 Assert.Equal(event1, stepReport.OccurredEvent);
                 Assert.Equal(event1, mostRecentEventHolder.MostRecentEvent); 
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(5, stepsTaken);
             Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken five steps, so the timeline
@@ -527,7 +527,7 @@ namespace Timeline_Test
                 Assert.Equal(new HashSet<Okazo<int>>() { possibleEvent }, stepReport.PossibleEventBackup); //The possible event should still be in the PossibleEvents list.
                 Assert.Equal(occurredEvent, stepReport.OccurredEvent);
                 Assert.Equal(occurredEvent, mostRecentEventHolder.MostRecentEvent);
-                Assert.Null(stepReport.ReactionEvent);
+                Assert.Null(stepReport.InstantActionEvent);
             }
             Assert.Equal(5, stepsTaken);
             Assert.Equal(TimelinePhase.Display, timeline.Phase);//We have taken five steps, so the timeline should now be in Display phase since there are no more events to process.
@@ -559,7 +559,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup); //The possible event should be removed since it is queued to be triggered in the InstantAction phase.
                     Assert.Null(stepReport.OccurredEvent); //The event hasn't been triggered yet, so it should be null.
                     Assert.Null(mostRecentEventHolder.MostRecentEvent); //The event hasn't been triggered yet, so it should be null.
-                    Assert.Equal(possibleEvent, stepReport.ReactionEvent); //But it should be queued up to be triggered in InstantAction phase
+                    Assert.Equal(possibleEvent, stepReport.InstantActionEvent); //But it should be queued up to be triggered in InstantAction phase
                 }
                 else if (stepsTaken == 5) //This is the InstantAction -> PostEffect step
                 {
@@ -570,7 +570,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                     Assert.Equal(possibleEvent, stepReport.OccurredEvent); //The event should have been triggered now.
                     Assert.Equal(possibleEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
-                    Assert.Null(stepReport.ReactionEvent);
+                    Assert.Null(stepReport.InstantActionEvent);
                 }
             }
             Assert.Equal(6, stepsTaken); //Should have taken 6 steps to reach Display and should break once it does
@@ -599,7 +599,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup); //The possible event should be removed since it is queued to be triggered in the InstantAction phase.
                     Assert.Null(stepReport.OccurredEvent); //The event hasn't been triggered yet, so it should be null.
                     Assert.Null(mostRecentEventHolder.MostRecentEvent); //The event hasn't been triggered yet, so it should be null.
-                    Assert.Equal(possibleEvent, stepReport.ReactionEvent); //But it should be queued up to be triggered in InstantAction phase
+                    Assert.Equal(possibleEvent, stepReport.InstantActionEvent); //But it should be queued up to be triggered in InstantAction phase
                 }
                 else if (stepsTaken == 5) //This is the InstantAction -> PostEffect step
                 {
@@ -610,7 +610,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                     Assert.Equal(possibleEvent, stepReport.OccurredEvent); //The event should have been triggered now.
                     Assert.Equal(possibleEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
-                    Assert.Null(stepReport.ReactionEvent);
+                    Assert.Null(stepReport.InstantActionEvent);
                 }
             }
             Assert.Equal(6, stepsTaken);
@@ -645,7 +645,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>() { latestEvent }, stepReport.PossibleEventBackup); //The possible event should be removed since it is queued to be triggered in the InstantAction phase.
                     Assert.Null(stepReport.OccurredEvent); //The event hasn't been triggered yet, so it should be null.
                     Assert.Null(mostRecentEventHolder.MostRecentEvent); //The event hasn't been triggered yet, so it should be null.
-                    Assert.Equal(earliestEvent, stepReport.ReactionEvent); //But it should be queued up to be triggered in InstantAction phase
+                    Assert.Equal(earliestEvent, stepReport.InstantActionEvent); //But it should be queued up to be triggered in InstantAction phase
                 }
                 else if (stepsTaken == 5) //This is the InstantAction -> PostEffect step
                 {
@@ -656,7 +656,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>() { latestEvent }, stepReport.PossibleEventBackup);
                     Assert.Equal(earliestEvent, stepReport.OccurredEvent); //The event should have been triggered now.
                     Assert.Equal(earliestEvent, mostRecentEventHolder.MostRecentEvent); //The event should have been triggered now.
-                    Assert.Null(stepReport.ReactionEvent);
+                    Assert.Null(stepReport.InstantActionEvent);
                 }
             }
             Assert.Equal(6, stepsTaken); //If this fails, then we did both events instead of just one
@@ -695,7 +695,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>() { card2 }, stepReport.PossibleEventBackup); 
                     Assert.Null(stepReport.OccurredEvent); 
                     Assert.Null(mostRecentEventHolder.MostRecentEvent);
-                    Assert.Equal(card1, stepReport.ReactionEvent);
+                    Assert.Equal(card1, stepReport.InstantActionEvent);
                 } else if (stepsTaken == 5) //First event triggered
                 {
                     Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
@@ -705,7 +705,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>() { card2 }, stepReport.PossibleEventBackup);
                     Assert.Equal(card1, stepReport.OccurredEvent); 
                     Assert.Equal(card1, mostRecentEventHolder.MostRecentEvent);
-                    Assert.Null(stepReport.ReactionEvent);
+                    Assert.Null(stepReport.InstantActionEvent);
                 } else if (stepsTaken == 6) //Second event found
                 {
                     Assert.Equal(TimelinePhase.PostEffect, stepReport.InitialPhase);
@@ -715,7 +715,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                     Assert.Null(stepReport.OccurredEvent);
                     Assert.Equal(card1, mostRecentEventHolder.MostRecentEvent); //Note that event though card1 has already been triggered, nothing cleared it out
-                    Assert.Equal(card2, stepReport.ReactionEvent);
+                    Assert.Equal(card2, stepReport.InstantActionEvent);
                 } else if (stepsTaken == 7) //Second event triggered
                 {
                     Assert.Equal(TimelinePhase.InstantAction, stepReport.InitialPhase);
@@ -725,7 +725,7 @@ namespace Timeline_Test
                     Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
                     Assert.Equal(card2, stepReport.OccurredEvent);
                     Assert.Equal(card2, mostRecentEventHolder.MostRecentEvent);
-                    Assert.Null(stepReport.ReactionEvent);
+                    Assert.Null(stepReport.InstantActionEvent);
                 }
             }
             Assert.Equal(8, stepsTaken); //If this fails, then we didn't do both events

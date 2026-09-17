@@ -30,9 +30,9 @@ namespace Timeline
         /// <summary>
         /// If an event should occur immediately, this is set to that event so it can be processed in the InstantAction phase. Otherwise, this is null.
         /// Note that only one event can be processed per InstantAction phase, so this isn't a list.
-        /// This is because one ReactionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
+        /// This is because one InstantActionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
         /// </summary>
-        public Okazo<T>? ReactionEvent { get; private set; }
+        public Okazo<T>? InstantActionEvent { get; private set; }
 
         /// <summary>
         /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
@@ -109,7 +109,7 @@ namespace Timeline
         /// <summary>
         /// Always adds the event as a possible event. You should only use this for events added during another event, such as:
         /// *The Zeroed phase, during executing an event, where we want to set up an event caused by the event that just occurred, but we don't know if it will occur immediately or not, so we add it to PossibleEvents and let the InstantActionCheck handle it. (if we know it will occur immediately, we can just do the effects without the timeline)
-        /// *A reaction event that is being added during the InstantAction phase. 
+        /// *An InstantAction event that is being added during the InstantAction phase. 
         /// If you're adding an event during the Open phase,you should probably use AddEvent instead, since it will put the event in the correct list based on its time remaining.
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
@@ -186,7 +186,7 @@ namespace Timeline
                         if (InstantActionCheck())
                         {
                             Phase = TimelinePhase.InstantAction;
-                            curReport.ReactionEvent = ReactionEvent;
+                            curReport.InstantActionEvent = InstantActionEvent;
                         }
                         else
                         {
@@ -195,17 +195,17 @@ namespace Timeline
                         break;
                     case TimelinePhase.InstantAction:
                         // Do the event that just was added...
-                        if (ReactionEvent == null)
+                        if (InstantActionEvent == null)
                         {
-                            throw new InvalidOperationException("ReactionEvent should have been set in the InstantActionCheck if we returned true, but it was null. Clearly someone forgot to set it.");
+                            throw new InvalidOperationException("InstantActionEvent should have been set in the InstantActionCheck if we returned true, but it was null. Clearly someone forgot to set it.");
                         }
-                        if (ReactionEvent.TimeRemaining.Time != T.Zero)
+                        if (InstantActionEvent.TimeRemaining.Time != T.Zero)
                         {
-                            Advance.Invoke(this, ReactionEvent.TimeRemaining.Time); // This should rewind time so the ReactionEvent is at time zero.
+                            Advance.Invoke(this, InstantActionEvent.TimeRemaining.Time); // This should rewind time so the InstantActionEvent is at time zero.
                         }
-                        ReactionEvent.Trigger();
-                        curReport.OccurredEvent = ReactionEvent;
-                        ReactionEvent = null;
+                        InstantActionEvent.Trigger();
+                        curReport.OccurredEvent = InstantActionEvent;
+                        InstantActionEvent = null;
                         Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
                         break;
                 }
@@ -227,15 +227,15 @@ namespace Timeline
             return Timeline<T>.SimulatePurge(ref _Events, ref _PossibleEvents);
         }
         /// <summary>
-        /// Finds if any of the possible events should occur immediately, and if so, sets the ReactionEvent to the earliest of these events, removes it from PossibleEvents, and rewinds time so this event is at time zero.
+        /// Finds if any of the possible events should occur immediately, and if so, sets the InstantActionEvent to the earliest of these events, removes it from PossibleEvents, and rewinds time so this event is at time zero.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if there is already a reaction event to process.</exception>
-        /// <returns>True if an action was found and set as the ReactionEvent, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if there is already an instant action to process.</exception>
+        /// <returns>True if an action was found and set as the InstantActionEvent, false otherwise.</returns>
         private bool InstantActionCheck()
         {
-            if (ReactionEvent != null)
+            if (InstantActionEvent != null)
             {
-                throw new InvalidOperationException("There's already a reaction event to process. Don't look for another one.");
+                throw new InvalidOperationException("There's already an instant action event to process. Don't look for another one.");
             }
             // Keep track of the earliest time remaining among the possible events
             TimeOrNever<T> timeToBeat = new();
@@ -243,23 +243,23 @@ namespace Timeline
             {
                 if (e.TimeRemaining.CompareTo(timeToBeat) > 0) //Note that if e.TimeRemaining is Never, then it will be greater than timeToBeat, so we don't need to check for that explicitly.
                 {
-                    // If e is later than the timeToBeat, then it is positive, less negative than the current ReactionEvent, or it is never.
+                    // If e is later than the timeToBeat, then it is positive, less negative than the current InstantActionEvent, or it is never.
                     continue;
                 }
-                if (ReactionEvent != null && ReactionEvent.CompareTo(e) < 0)
+                if (InstantActionEvent != null && InstantActionEvent.CompareTo(e) < 0)
                 {
-                    // If we already have a ReactionEvent and it sorts earlier than e, then we should keep the current ReactionEvent
+                    // If we already have a InstantActionEvent and it sorts earlier than e, then we should keep the current InstantActionEvent
                     continue;
                 }
                 timeToBeat = e.TimeRemaining;
-                ReactionEvent = e;
+                InstantActionEvent = e;
             }
-            if (ReactionEvent == null)
+            if (InstantActionEvent == null)
             {
                 return false;
             }
-            // Remove the ReactionEvent from PossibleEvents, since it's now happening.
-            PossibleEvents.Remove(ReactionEvent);
+            // Remove the InstantActionEvent from PossibleEvents, since it's now happening.
+            PossibleEvents.Remove(InstantActionEvent);
             return true;
         }
         #endregion
