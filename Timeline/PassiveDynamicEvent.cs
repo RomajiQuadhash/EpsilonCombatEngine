@@ -23,6 +23,7 @@ namespace Timeline
         /// Needs to be set manually, but will automatically update when time advances.
         /// </summary>
         public override TimeOrNever<T> TimeRemaining { get; set; }
+        public override bool HaltsInstantAction { get; set; } = false;
         private bool _couldOccur;
 
         /// <summary>

@@ -228,6 +228,7 @@ namespace Timeline
         }
         /// <summary>
         /// Finds if any of the possible events should occur immediately, and if so, sets the InstantActionEvent to the earliest of these events, and removes it from PossibleEvents.
+        /// If we hit an event that halts instant actions, we will not set the InstantActionEvent and will return false, so the timeline can move on.
         /// </summary>
         /// <exception cref="InvalidOperationException">Thrown if there is already an instant action to process.</exception>
         /// <returns>True if an action was found and set as the InstantActionEvent, false otherwise.</returns>
@@ -256,6 +257,12 @@ namespace Timeline
             }
             if (InstantActionEvent == null)
             {
+                return false;
+            }
+            if (InstantActionEvent.HaltsInstantAction)
+            {
+                //We should not process an Instant Action if we find one that halts Instant actions. Act like we found nothing
+                InstantActionEvent = null;
                 return false;
             }
             // Remove the InstantActionEvent from PossibleEvents, since it's now happening.
