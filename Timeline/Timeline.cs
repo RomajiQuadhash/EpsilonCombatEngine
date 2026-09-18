@@ -296,13 +296,10 @@ namespace Timeline
                 }
             }
             //Before adding the demoted events, remove any not Never events from PossibleEvents and add them to Events
-            foreach (Okazo<T> e in PossibleEvents)
+            foreach (Okazo<T> e in PossibleEvents.Where(x => !x.TimeRemaining.IsNever).ToList())
             {
-                if (!e.TimeRemaining.IsNever)
-                {
-                    Events.Add(e);
-                    PossibleEvents.Remove(e);
-                }
+                Events.Add(e);
+                PossibleEvents.Remove(e);
             }
             //Sort the events now that we've added any promotable events to the main list
             Events.Sort();
@@ -349,6 +346,7 @@ namespace Timeline
         public static bool SimulatePurge(ref List<Okazo<T>> events, ref ISet<Okazo<T>> possibleEvents)
         {
             List<Okazo<T>> promotableEvents = [];
+            List<Okazo<T>> purgeFromPossible = [];
             foreach (Okazo<T> e in possibleEvents)
             {
                 if (e.CouldOccur && e.TimeRemaining.IsNever)
@@ -360,7 +358,11 @@ namespace Timeline
                 {
                     promotableEvents.Add(e);
                 }
-                //Remove events that are never and can't occur
+                //Remove everything except events that are (Never and CouldOccur)
+                purgeFromPossible.Add(e);
+            }
+            foreach (Okazo<T> e in purgeFromPossible)
+            {
                 possibleEvents.Remove(e);
             }
             //Before adding the promotable events, remove any Never events from events (and put them in possibleEvents if possible)
