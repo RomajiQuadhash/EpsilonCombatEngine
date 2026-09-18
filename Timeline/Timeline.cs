@@ -359,7 +359,7 @@ namespace Timeline
                 {
                     promotableEvents.Add(e);
                 }
-                //Remove events that are never and can't occur (or are not never and can occur and are being promoted)
+                //Remove everything except events that are (Never and CouldOccur)
                 purgeFromPossible.Add(e);
             }
             foreach (Okazo<T> e in purgeFromPossible)
