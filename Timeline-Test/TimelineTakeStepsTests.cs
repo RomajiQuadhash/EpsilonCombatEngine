@@ -896,5 +896,157 @@ namespace Timeline_Test
         //This is because once it gets back to PostEffect, the state is the same as after any other action, with the one exception that
         //events could be pushed forward if an instant action triggered in the past
         #endregion
+        #region Cleaning Tests
+        [Fact(DisplayName ="If there are no Events or PossibleEvents, cleaning phase does nothing but go to Display")]
+        public void CleaningWithoutEvents()
+        {
+            Timeline<int> timeline = new();
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
+            int stepsTaken = 5; //Skipping 5 steps (when it would get there if no InstantAction phases)
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                //We should only be here on step 6
+                Assert.Equal(TimelinePhase.Cleaning, stepReport.InitialPhase);
+                Assert.Equal(TimelinePhase.Display, stepReport.FinalPhase);
+                Assert.Equal(0,stepReport.AdvanceAmount);
+                Assert.Equal([], stepReport.EventBackup);
+                Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                Assert.Null(stepReport.OccurredEvent);
+                Assert.Null(stepReport.InstantActionEvent);
+            }
+            Assert.Equal(6, stepsTaken); //Just in case it for some reason loops
+        }
+        [Fact(DisplayName ="If there are events in Events that are at Never, during Cleaning Phase, they're moved to PossibleEvents")]
+        public void CleaningWithNeverEvents()
+        {
+            Timeline<int> timeline = new();
+
+            TimeOrNever<int> never = new(5); //Turn this to Never later to make them first be added to Events
+            PassiveDynamicEvent<int> neverEvent1 = new(never,true,timeline); 
+            PassiveDynamicEvent<int> neverEvent2 = new(never,false, timeline); //Note that if they could occur shouldn't matter
+
+            //Add the events
+            timeline.AddEvent(neverEvent1);
+            timeline.AddEvent(neverEvent2);
+            //Make them both never take place
+            never.IsNever = true;
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
+            int stepsTaken = 5;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                //We should only be here on step 6
+                Assert.Equal(TimelinePhase.Cleaning, stepReport.InitialPhase);
+                Assert.Equal(TimelinePhase.Display, stepReport.FinalPhase);
+                Assert.Equal(0, stepReport.AdvanceAmount);
+                Assert.Equal([], stepReport.EventBackup);
+                Assert.Equal(new HashSet<Okazo<int>>() { neverEvent1,neverEvent2}, stepReport.PossibleEventBackup);
+                Assert.Null(stepReport.OccurredEvent);
+                Assert.Null(stepReport.InstantActionEvent);
+            }
+            Assert.Equal(6, stepsTaken); //Just in case it for some reason loops
+        }
+        [Fact(DisplayName ="If there are events in Events, during Cleaning Phase, they are sorted")]
+        public void CleaningSortsEvents()
+        {
+            Timeline<int> timeline = new();
+
+            BaseCard<int> card1 = new(1,timeline);
+            BaseCard<int> card2 = new(3, timeline);
+            BaseCard<int> card3 = new(4,timeline);
+
+            //Add them out of order to ensure that we sort them
+            timeline.AddEvent(card3);
+            timeline.AddEvent(card1);
+            timeline.AddEvent(card2);
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
+            int stepsTaken = 5;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                //We should only be here on step 6
+                Assert.Equal(TimelinePhase.Cleaning, stepReport.InitialPhase);
+                Assert.Equal(TimelinePhase.Display, stepReport.FinalPhase);
+                Assert.Equal(0, stepReport.AdvanceAmount);
+                Assert.Equal([card1,card2,card3], stepReport.EventBackup);
+                Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                Assert.Null(stepReport.OccurredEvent);
+                Assert.Null(stepReport.InstantActionEvent);
+            }
+            Assert.Equal(6, stepsTaken);
+        }
+        [Fact(DisplayName ="If all events are not Never, during Cleaning Phase, they are all moved to Events and sorted")]
+        public void CleaningMovesAndSortsEvents()
+        {
+            Timeline<int> timeline = new();
+
+            BaseCard<int> card1 = new(1, timeline);
+            BaseCard<int> card2 = new(3, timeline);
+            BaseCard<int> card3 = new(4, timeline);
+
+            //Add them out of order to ensure that we sort them
+            timeline.AddEvent(card3);
+            timeline.AddPossibleEvent(card1); //Put this in PossibleEvents to ensure it is moved over
+            timeline.AddEvent(card2);
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
+            int stepsTaken = 5;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                //We should only be here on step 6
+                Assert.Equal(TimelinePhase.Cleaning, stepReport.InitialPhase);
+                Assert.Equal(TimelinePhase.Display, stepReport.FinalPhase);
+                Assert.Equal(0, stepReport.AdvanceAmount);
+                Assert.Equal([card1, card2, card3], stepReport.EventBackup);
+                Assert.Equal(new HashSet<Okazo<int>>(), stepReport.PossibleEventBackup);
+                Assert.Null(stepReport.OccurredEvent);
+                Assert.Null(stepReport.InstantActionEvent);
+            }
+            Assert.Equal(6, stepsTaken);
+        }
+        [Fact(DisplayName = "During cleaning phase, events that are Never are put in Possible Events and events that are not are put in Events and sorted")]
+        public void CleaningMovesAndSortsEventsIncludingNever()
+        {
+            Timeline<int> timeline = new();
+
+            BaseCard<int> card1 = new(1, timeline);
+            BaseCard<int> card2 = new(3, timeline);
+            BaseCard<int> card3 = new(4, timeline);
+
+            TimeOrNever<int> never = new(5); //Turn this to Never later to make them first be added to Events
+            PassiveDynamicEvent<int> neverEvent1 = new(never, true, timeline);
+            PassiveDynamicEvent<int> neverEvent2 = new(never, false, timeline);
+
+            //Add them out of order to ensure that we sort them
+            timeline.AddEvent(card3);
+            timeline.AddEvent(neverEvent1);
+            timeline.AddPossibleEvent(card1); //Put this in PossibleEvents to ensure it is moved over
+            timeline.AddEvent(card2);
+            timeline.AddPossibleEvent(neverEvent2);
+
+            //Make the never events never
+            never.IsNever = true;
+
+            Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
+            int stepsTaken = 5;
+            foreach (var stepReport in timeline.TakeSteps())
+            {
+                stepsTaken++;
+                //We should only be here on step 6
+                Assert.Equal(TimelinePhase.Cleaning, stepReport.InitialPhase);
+                Assert.Equal(TimelinePhase.Display, stepReport.FinalPhase);
+                Assert.Equal(0, stepReport.AdvanceAmount);
+                Assert.Equal([card1, card2, card3], stepReport.EventBackup);
+                Assert.Equal(new HashSet<Okazo<int>>() { neverEvent1, neverEvent2 }, stepReport.PossibleEventBackup);
+                Assert.Null(stepReport.OccurredEvent);
+                Assert.Null(stepReport.InstantActionEvent);
+            }
+            Assert.Equal(6, stepsTaken);
+        }
+        #endregion
     }
 }
