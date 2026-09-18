@@ -61,6 +61,7 @@ namespace Timeline
         /// Use to return the timeline to the Open phase after Display.
         /// Only use after Display, since otherwise we're in the middle of processing events. (also it would throw an error)
         /// </summary>
+        /// <remarks>Be careful who is using this function, since then the timeline can be run from this point on. (exact details TBD)</remarks>
         public void SetOpen()
         {
             PhaseValid([TimelinePhase.Display]);
