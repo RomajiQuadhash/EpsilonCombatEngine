@@ -30,9 +30,9 @@ namespace Timeline
         /// <summary>
         /// If an event should occur immediately, this is set to that event so it can be processed in the InstantAction phase. Otherwise, this is null.
         /// Note that only one event can be processed per InstantAction phase, so this isn't a list.
-        /// This is because one ReactionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
+        /// This is because one InstantActionEvent can cause another event to become instant, cause an event to no longer be instant, or change the order of other instant events.
         /// </summary>
-        public Okazo<T>? ReactionEvent { get; private set; }
+        public Okazo<T>? InstantActionEvent { get; private set; }
 
         /// <summary>
         /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
@@ -61,6 +61,7 @@ namespace Timeline
         /// Use to return the timeline to the Open phase after Display.
         /// Only use after Display, since otherwise we're in the middle of processing events. (also it would throw an error)
         /// </summary>
+        /// <remarks>Be careful who is using this function, since then the timeline can be run from this point on. (exact details TBD)</remarks>
         public void SetOpen()
         {
             PhaseValid([TimelinePhase.Display]);
@@ -109,7 +110,7 @@ namespace Timeline
         /// <summary>
         /// Always adds the event as a possible event. You should only use this for events added during another event, such as:
         /// *The Zeroed phase, during executing an event, where we want to set up an event caused by the event that just occurred, but we don't know if it will occur immediately or not, so we add it to PossibleEvents and let the InstantActionCheck handle it. (if we know it will occur immediately, we can just do the effects without the timeline)
-        /// *A reaction event that is being added during the InstantAction phase. 
+        /// *An InstantAction event that is being added during the InstantAction phase. 
         /// If you're adding an event during the Open phase,you should probably use AddEvent instead, since it will put the event in the correct list based on its time remaining.
         /// </summary>
         /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
@@ -186,27 +187,36 @@ namespace Timeline
                         if (InstantActionCheck())
                         {
                             Phase = TimelinePhase.InstantAction;
-                            curReport.ReactionEvent = ReactionEvent;
+                            curReport.InstantActionEvent = InstantActionEvent;
                         }
                         else
                         {
-                            Phase = TimelinePhase.Display;
+                            Phase = TimelinePhase.Cleaning;
                         }
                         break;
                     case TimelinePhase.InstantAction:
                         // Do the event that just was added...
-                        if (ReactionEvent == null)
+                        if (InstantActionEvent == null)
                         {
-                            throw new InvalidOperationException("ReactionEvent should have been set in the InstantActionCheck if we returned true, but it was null. Clearly someone forgot to set it.");
+                            throw new InvalidOperationException("InstantActionEvent should have been set in the InstantActionCheck if we returned true, but it was null. Clearly someone forgot to set it.");
                         }
-                        if (ReactionEvent.TimeRemaining.Time != T.Zero)
+                        if (InstantActionEvent.TimeRemaining.Time != T.Zero)
                         {
-                            Advance.Invoke(this, ReactionEvent.TimeRemaining.Time); // This should rewind time so the ReactionEvent is at time zero.
+                            Advance.Invoke(this, InstantActionEvent.TimeRemaining.Time); // This should rewind time so the InstantActionEvent is at time zero.
                         }
-                        ReactionEvent.Trigger();
-                        curReport.OccurredEvent = ReactionEvent;
-                        ReactionEvent = null;
-                        Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Display.
+                        InstantActionEvent.Trigger();
+                        curReport.OccurredEvent = InstantActionEvent;
+                        InstantActionEvent = null;
+                        Phase = TimelinePhase.PostEffect; // Then go back to PostEffect to check for any more consequences of the original event or the new event, and repeat this process until there are no more instant actions to perform, at which point we can move to Cleaning.
+                        break;
+                    case TimelinePhase.Cleaning:
+                        //Clean up the timeline, move all events that should be on the timeline from PossibleEvents to Events,
+                        //move any events that are Never to PossibleEvents, and finally sort Events.
+                        //Note that CouldOccur is NOT checked, since it is possible while in Open they become valid to occur.
+                        //If they remain unable to occur, they will be removed in the next Purge phase.
+                        //If that's too late, well, they can be removed manually during Open phase.
+                        Clean();
+                        Phase = TimelinePhase.Display;
                         break;
                 }
                 Advance -= curReport.OnAdvance; // Unsubscribe the report from the Advance event so it doesn't track time advancements during the next step.
@@ -227,15 +237,16 @@ namespace Timeline
             return Timeline<T>.SimulatePurge(ref _Events, ref _PossibleEvents);
         }
         /// <summary>
-        /// Finds if any of the possible events should occur immediately, and if so, sets the ReactionEvent to the earliest of these events, removes it from PossibleEvents, and rewinds time so this event is at time zero.
+        /// Finds if any of the possible events should occur immediately, and if so, sets the InstantActionEvent to the earliest of these events, and removes it from PossibleEvents.
+        /// If we hit an event that halts instant actions, we will not set the InstantActionEvent and will return false, so the timeline can move on.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if there is already a reaction event to process.</exception>
-        /// <returns>True if an action was found and set as the ReactionEvent, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if there is already an instant action to process.</exception>
+        /// <returns>True if an action was found and set as the InstantActionEvent, false otherwise.</returns>
         private bool InstantActionCheck()
         {
-            if (ReactionEvent != null)
+            if (InstantActionEvent != null)
             {
-                throw new InvalidOperationException("There's already a reaction event to process. Don't look for another one.");
+                throw new InvalidOperationException("There's already an instant action event to process. Don't look for another one.");
             }
             // Keep track of the earliest time remaining among the possible events
             TimeOrNever<T> timeToBeat = new();
@@ -243,24 +254,58 @@ namespace Timeline
             {
                 if (e.TimeRemaining.CompareTo(timeToBeat) > 0) //Note that if e.TimeRemaining is Never, then it will be greater than timeToBeat, so we don't need to check for that explicitly.
                 {
-                    // If e is later than the timeToBeat, then it is positive, less negative than the current ReactionEvent, or it is never.
+                    // If e is later than the timeToBeat, then it is positive, less negative than the current InstantActionEvent, or it is never.
                     continue;
                 }
-                if (ReactionEvent != null && ReactionEvent.CompareTo(e) < 0)
+                if (InstantActionEvent != null && InstantActionEvent.CompareTo(e) < 0)
                 {
-                    // If we already have a ReactionEvent and it sorts earlier than e, then we should keep the current ReactionEvent
+                    // If we already have a InstantActionEvent and it sorts earlier than e, then we should keep the current InstantActionEvent
                     continue;
                 }
                 timeToBeat = e.TimeRemaining;
-                ReactionEvent = e;
+                InstantActionEvent = e;
             }
-            if (ReactionEvent == null)
+            if (InstantActionEvent == null)
             {
                 return false;
             }
-            // Remove the ReactionEvent from PossibleEvents, since it's now happening.
-            PossibleEvents.Remove(ReactionEvent);
+            if (InstantActionEvent.HaltsInstantAction)
+            {
+                //We should not process an Instant Action if we find one that halts Instant actions. Act like we found nothing
+                InstantActionEvent = null;
+                return false;
+            }
+            // Remove the InstantActionEvent from PossibleEvents, since it's now happening.
+            PossibleEvents.Remove(InstantActionEvent);
             return true;
+        }
+
+        /// <summary>
+        /// Cleans up the events by promoting any promotable events from PossibleEvents to Events, sorting Events, and demoting any events that are at Never back to PossibleEvents.
+        /// </summary>
+        private void Clean()
+        {
+            //Since we'll be sorting the events, we'll add the promoted events while looking through PossibleEvents, and then sort at the end.
+            //Since any event that is at Never can't be sorted, we'll move them out first.
+            HashSet<Okazo<T>> DemotedEvents = [];
+            for (int i = Events.Count - 1; i >= 0; i--)
+            {
+                if (Events[i].TimeRemaining.IsNever)
+                {
+                    DemotedEvents.Add(Events[i]);
+                    Events.RemoveAt(i);
+                }
+            }
+            //Before adding the demoted events, remove any not Never events from PossibleEvents and add them to Events
+            foreach (Okazo<T> e in PossibleEvents.Where(x => !x.TimeRemaining.IsNever).ToList())
+            {
+                Events.Add(e);
+                PossibleEvents.Remove(e);
+            }
+            //Sort the events now that we've added any promotable events to the main list
+            Events.Sort();
+            //Finally, add the Demoted Events back to PossibleEvents so we don't lose them.
+            PossibleEvents.UnionWith(DemotedEvents);
         }
         #endregion
 
@@ -302,6 +347,7 @@ namespace Timeline
         public static bool SimulatePurge(ref List<Okazo<T>> events, ref ISet<Okazo<T>> possibleEvents)
         {
             List<Okazo<T>> promotableEvents = [];
+            List<Okazo<T>> purgeFromPossible = [];
             foreach (Okazo<T> e in possibleEvents)
             {
                 if (e.CouldOccur && e.TimeRemaining.IsNever)
@@ -313,7 +359,11 @@ namespace Timeline
                 {
                     promotableEvents.Add(e);
                 }
-                //Remove events that are never and can't occur
+                //Remove everything except events that are (Never and CouldOccur)
+                purgeFromPossible.Add(e);
+            }
+            foreach (Okazo<T> e in purgeFromPossible)
+            {
                 possibleEvents.Remove(e);
             }
             //Before adding the promotable events, remove any Never events from events (and put them in possibleEvents if possible)
@@ -343,9 +393,10 @@ namespace Timeline
         Purged, // Any event that is not Never among Events and PossibleEvents is in Events, and all events in PossibleEvents are Never.
         Sorted, // All events in Events are sorted by time remaining.
         Zeroed, // The next event to occur is at time zero, and all events that are at time zero are at the front of the list in some deterministic order.
-        PostEffect, // An event has just occurred, either from the main list or as an instant action, but we haven't checked for any consequences of this event yet. This is where we check for any events that should occur immediately as a result of this event, and if there are any, we move to the InstantAction phase to do them before moving to Display.
+        PostEffect, // An event has just occurred, either from the main list or as an instant action, but we haven't checked for any consequences of this event yet. This is where we check for any events that should occur immediately as a result of this event, and if there are any, we move to the InstantAction phase to do them before moving to Cleaning.
         InstantAction, // Only reached if a Possible Event becomes 0 or negative during the PostEffect phase. Time is rewound so the earliest of these events is at time zero, and all events that are at time zero are at the front of the list in some deterministic order. Returns to PostEffect after this.
-        Display, // After PostEffect and any InstantAction phases are complete, the timeline is ready for display. A visual representation of the timeline should be generated at this point, and any events that are at time zero should be highlighted as occurring now. Set back to Open after this.
+        Cleaning, // After PostEffect and any InstantAction phases are complete, get the timeline ready for display. Sort out Events and PossibleEvents, and remove any events that are Never and can't occur. Goes to Display
+        Display, // After Cleaning, the timeline is ready for display. A visual representation of the timeline should be generated at this point, and any events that are at time zero should be highlighted as occurring now. Set back to Open after this.
         Terminated = 255 // The battle is over, so the timeline is terminated. No events should be added or processed at this point, and the timeline should be displayed in its final state.
     }
     /// <summary>

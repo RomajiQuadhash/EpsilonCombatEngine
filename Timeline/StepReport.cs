@@ -46,10 +46,10 @@ namespace Timeline
         /// </summary>
         public Okazo<T>? OccurredEvent { get; set; }
         /// <summary>
-        /// If there is an event selected to be a reaction during this step, saves the event.
+        /// If there is an event selected to be an Instant Action during this step, saves the event.
         /// Note that this is shallow copy so don't rely on it persisting into the next step.
         /// </summary>
-        public Okazo<T>? ReactionEvent { get; set; }
+        public Okazo<T>? InstantActionEvent { get; set; }
 
         #region Event Handlers
         /// <summary>
