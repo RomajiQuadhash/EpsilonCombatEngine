@@ -19,7 +19,7 @@ namespace Combatants
         /// What the combatant's health is. Also includes the combatant's max and min health (min only not zero if the combatant is bleeding).
         /// </summary>
         /// <remarks>Should be a type designed to take changes over time well.</remarks>
-        public required AbstractMeter<T,int> HealthMeter { get; set; }
+        public abstract required AbstractMeter<T,int> HealthMeter { get; set; }
 
         #region Status Flags
         //These should be used for universal status flags, like "is dead", "is KO'd", "can be killed", etc.
@@ -66,10 +66,10 @@ namespace Combatants
         /// <summary>
         /// Represents when the combatant's next turn will occur.
         /// May be updated if the combatant is waiting for something to happen and this is the longest they will wait before giving up.
-        /// If this is null, the combatant should likely not be considered active, but use IsActive for that, since it could be
-        /// that the combatant is active but can't compute when their next turn will be.
+        /// Will be null if the combatant isn't active but the converse isn't true (it will be null if 
         /// </summary>
-        public AbstractTurnCard<T, object>? TurnCard { get; set; } = null;
+        /// <remarks>You will likely want to make a more type specific version and override this property to return that one.</remarks>
+        public abstract AbstractTurnCard<T, object>? TurnCard { get; set; }
         /// <summary>
         /// How fast the combatant is. Note that not all elements of the events this combatant takes will be based on Speed,
         /// but higher Speed should generally reduce the time spent waiting between taking meaningful actions (windup, recovery, etc.).
@@ -82,6 +82,7 @@ namespace Combatants
         /// Should be a meter set based on the max speed of the combat, the min-delay of the next action, and the combatant's speed.
         /// Should be such that when the meter reaches its max, the combatant's next action can occur.
         /// </summary>
+        /// <remarks>Note that this can be null. If it is, then a meter isn't involved in when going next will happen</remarks>
         public abstract AbstractMeter<T, T>? DelayBar { get; }
         #endregion
 
