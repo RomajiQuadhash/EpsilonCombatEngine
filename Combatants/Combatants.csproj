@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Rationalz" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Meters\Meters.csproj" />
     <ProjectReference Include="..\Timeline\Timeline.csproj" />
   </ItemGroup>
