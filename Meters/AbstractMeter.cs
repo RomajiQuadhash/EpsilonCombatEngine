@@ -16,7 +16,7 @@ namespace Meters
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     /// <typeparam name="M">The numeric type used for the metric</typeparam>
-    public abstract class AbstractMeter<T, M> : IAdvanceable<T> where T : INumber<T> where M : INumber<M>
+    public abstract class AbstractMeter<T, M> : IAdvanceable<T>,IMeter<T> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>
         /// The timeline this meter belongs to. Should NEVER change, since a timeline should exist for the entire lifetime of a battle,
