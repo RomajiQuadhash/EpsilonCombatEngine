@@ -28,9 +28,7 @@ public class TimelineBasicTests
     public void Test2()
     {
         Timeline<int> timeline = new();
-        TimeOrNever<int> neverTime = new();
-        { neverTime.IsNever = true; }
-        PassiveDynamicEvent<int> nonOccuringEvent = new(neverTime, false, timeline); //Using the two argument constructor would automatically use AddPossibleEvent, so we use the three argument constructor to avoid that
+        PassiveDynamicEvent<int> nonOccuringEvent = new(new(true), false, timeline); //Using the two argument constructor would automatically use AddPossibleEvent, so we use the three argument constructor to avoid that
         timeline.AddEvent(nonOccuringEvent);
         Assert.Contains(nonOccuringEvent, timeline.PossibleEvents);
         Assert.DoesNotContain(nonOccuringEvent, timeline.Events);

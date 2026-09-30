@@ -44,11 +44,11 @@ namespace CoreMetrics
             // Always return zero if we're already at the threshold, even if the rate of change is zero, to avoid returning "never" when we're already there.
             if (Value == threshold)
             {
-                return new TimeOrNever<T>(T.Zero);
+                return new TimeOrNever<T>(false);
             }
             if (T.IsZero(RateOfChange))
             {
-                return new TimeOrNever<T> { IsNever = true };
+                return new TimeOrNever<T>(true);
             }
             return new TimeOrNever<T>((Value - threshold) / RateOfChange);
         }
@@ -65,7 +65,7 @@ namespace CoreMetrics
             // If the expected crossing time is negative, then it won't happen in the future, so return never.
             if (!cross.IsNever && cross.Time.CompareTo(T.Zero) < 0)
             {
-                return new TimeOrNever<T> { IsNever = true };
+                return new TimeOrNever<T>(true);
             }
             return cross;
         }

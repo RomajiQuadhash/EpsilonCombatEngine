@@ -74,23 +74,15 @@ namespace Timeline_Test
         public void Test6()
         {
             Timeline<int> timeline = new();
-            TimeOrNever<int> never = new()
-            {
-                IsNever = true
-            };
-            PassiveDynamicEvent<int> alpha = new(never,true, timeline);
-            PassiveDynamicEvent<int> beta = new(never, false, timeline);
+            PassiveDynamicEvent<int> alpha = new(new(true), true, timeline);
+            PassiveDynamicEvent<int> beta = new(new(true), false, timeline);
             Assert.Throws<NeverIsNotATimeException>(() => alpha.CompareTo(beta));
         }
         [Fact(DisplayName = "If one event is Never, it sorts after any valid event, with ±10")]
         public void Test7()
         {
             Timeline<int> timeline = new();
-            TimeOrNever<int> never = new()
-            {
-                IsNever = true
-            };
-            PassiveDynamicEvent<int> alpha = new(never, true, timeline);
+            PassiveDynamicEvent<int> alpha = new(new(true), true, timeline);
             BaseCard<int> beta = new(0, timeline);
             Assert.Equal(-10, beta.CompareTo(alpha));
             Assert.Equal(10, alpha.CompareTo(beta));
