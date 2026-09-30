@@ -11,20 +11,21 @@ namespace CoreMetrics
 	/// Used to represent when something may happen or if it won't ever happen
 	/// </summary>
 	/// <typeparam name="T">Format of time to use</typeparam>
-	public class TimeOrNever<T> : IComparable<TimeOrNever<T>> where T : INumber<T>
+	public sealed record TimeOrNever<T> : IComparable<TimeOrNever<T>> where T : INumber<T>
     {
-		public TimeOrNever() => _internalTime = T.Zero;
 
-		public TimeOrNever(T t) => _internalTime = t;
+		public TimeOrNever(bool isNever) { _internalTime = T.Zero; IsNever = isNever; }
 
+		public TimeOrNever(T t) {_internalTime = t; IsNever = false; }
+
+        /// <summary>
+        /// True if this represents a 'never' state (and so reading the Time property will throw an exception), false if it represents a valid time.
+        /// </summary>
+        public bool IsNever { get; }
+
+		private readonly T _internalTime;
 		/// <summary>
-		/// Set to true to mark this as invalid
-		/// </summary>
-		public bool IsNever;
-
-		private T _internalTime;
-		/// <summary>
-		/// Gets the time if valid. If set, clears is never
+		/// Gets the time if valid.
 		/// </summary>
 		public T Time { 
 			get
@@ -34,11 +35,6 @@ namespace CoreMetrics
 					throw new NeverIsNotATimeException("Can't get the time, the time is Never!");
 				}
 				return _internalTime;
-			}
-			set 
-			{
-				_internalTime = value;
-				IsNever = false;
 			}
 		}
         /// <summary>

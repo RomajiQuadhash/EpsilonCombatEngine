@@ -42,10 +42,12 @@ namespace Timeline
                 if (TimeRemaining.IsNever)
                 {
                     _couldOccur=value;
+                    return;
                 }
                 if (value == true)
                 {
                     _couldOccur=true;
+                    return;
                 }
                 throw new InvalidOperationException("An event with a time remaining will occur.");
             } }
@@ -81,7 +83,7 @@ namespace Timeline
         /// </summary>
         /// <param name="couldOccur"></param>
         /// <param name="owningTimeline"></param>
-        public PassiveDynamicEvent(bool couldOccur, Timeline<T> owningTimeline):this(new TimeOrNever<T>() { IsNever = true }, couldOccur, owningTimeline)
+        public PassiveDynamicEvent(bool couldOccur, Timeline<T> owningTimeline):this(new TimeOrNever<T>(true), couldOccur, owningTimeline)
         {
             //Since we're always going to be never, we can always use AddPossibleEvent, so we can add the event in the constructor.
             owningTimeline.AddPossibleEvent(this);
@@ -97,7 +99,7 @@ namespace Timeline
             {
                 return;
             }
-            TimeRemaining.Time=TimeRemaining.Time - e;
+            TimeRemaining = new(TimeRemaining.Time - e);
         }
         /// <summary>
         /// If possible, invoke the Occuring event and remove this from the timeline's advance event.

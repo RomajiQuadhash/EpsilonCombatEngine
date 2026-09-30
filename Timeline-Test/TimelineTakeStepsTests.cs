@@ -57,11 +57,10 @@ namespace Timeline_Test
         public void TerminateOnAllNeverPurgeable()
         {
             Timeline<int> timeline = new();
-            TimeOrNever<int> neverTime = new() { IsNever = true };
             //Add a few events that are never and can't occur
-            PassiveDynamicEvent<int> eventThatBecomesNever = new(new TimeOrNever<int>(), false, timeline);
+            PassiveDynamicEvent<int> eventThatBecomesNever = new(new(false), false, timeline);
             timeline.AddEvent(eventThatBecomesNever); //Add it this way so it is in Events instead of PossibleEvents
-            eventThatBecomesNever.TimeRemaining = neverTime;
+            eventThatBecomesNever.TimeRemaining = new(true);
             _ = new PassiveDynamicEvent<int>(false, timeline); //This auto adds itself to PossibleEvents, so we don't need to add it manually
 
             //Now, the timeline has two events, one in Events and one in PossibleEvents, both of which are never and can't occur. Advancing should purge them and terminate with NoEvents.
@@ -86,11 +85,10 @@ namespace Timeline_Test
         public void TerminateOnAllNeverUnpurgeable()
         {
             Timeline<int> timeline = new();
-            TimeOrNever<int> neverTime = new() { IsNever = true };
             //Add a few events that are never and can occur
-            PassiveDynamicEvent<int> eventThatBecomesNever = new(new TimeOrNever<int>(), true, timeline);
+            PassiveDynamicEvent<int> eventThatBecomesNever = new(new(false), true, timeline);
             timeline.AddEvent(eventThatBecomesNever); //Add it this way so it is in Events instead of PossibleEvents
-            eventThatBecomesNever.TimeRemaining = neverTime;
+            eventThatBecomesNever.TimeRemaining = new(true);
             PassiveDynamicEvent<int> eventThatStartsAsNever = new(true, timeline); //This auto adds itself to PossibleEvents, so we don't need to add it manually
             //Now, the timeline has two events, one in Events and one in PossibleEvents, both of which are never and can occur. Advancing should move them to PossibleEvents and terminate with NoEvents.
             HashSet<Okazo<int>> expectedPossibleEvents = [eventThatBecomesNever, eventThatStartsAsNever];
@@ -235,7 +233,7 @@ namespace Timeline_Test
             BaseCard<int> validEvent = new(5, timeline);
             timeline.AddEvent(validEvent);
             //Add an invalid event to the timeline's Events
-            PassiveDynamicEvent<int> invalidEvent = new(new TimeOrNever<int>() { IsNever=true}, true, timeline); //This one can occur, but is never, so it should be in PossibleEvents after the purge.
+            PassiveDynamicEvent<int> invalidEvent = new(new(true), true, timeline); //This one can occur, but is never, so it should be in PossibleEvents after the purge.
             timeline.AddEvent(invalidEvent);
             _ = new PassiveDynamicEvent<int>(false, timeline); //This one can't occur, so it should be purged.
             int stepsTaken = 0;
@@ -270,7 +268,7 @@ namespace Timeline_Test
             timeline.AddEvent(invalidEvent1);
             timeline.AddEvent(validEvent2);
 
-            invalidEvent1.TimeRemaining = new TimeOrNever<int>() { IsNever = true }; //Make this event never, so it should be purged.
+            invalidEvent1.TimeRemaining = new(true); //Make this event never, so it should be purged.
             int stepsTaken = 0;
             foreach (var stepReport in timeline.TakeSteps())
             {
@@ -922,15 +920,16 @@ namespace Timeline_Test
         {
             Timeline<int> timeline = new();
 
-            TimeOrNever<int> never = new(5); //Turn this to Never later to make them first be added to Events
-            PassiveDynamicEvent<int> neverEvent1 = new(never,true,timeline); 
-            PassiveDynamicEvent<int> neverEvent2 = new(never,false, timeline); //Note that if they could occur shouldn't matter
+            TimeOrNever<int> notNever = new(5); //replace with Never later
+            PassiveDynamicEvent<int> neverEvent1 = new(notNever, true,timeline); 
+            PassiveDynamicEvent<int> neverEvent2 = new(notNever, false, timeline); //Note that if they could occur shouldn't matter
 
             //Add the events
             timeline.AddEvent(neverEvent1);
             timeline.AddEvent(neverEvent2);
             //Make them both never take place
-            never.IsNever = true;
+            neverEvent1.TimeRemaining = new(true);
+            neverEvent2.TimeRemaining = new(true);
 
             Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
             int stepsTaken = 5;
@@ -1017,9 +1016,9 @@ namespace Timeline_Test
             BaseCard<int> card2 = new(3, timeline);
             BaseCard<int> card3 = new(4, timeline);
 
-            TimeOrNever<int> never = new(5); //Turn this to Never later to make them first be added to Events
-            PassiveDynamicEvent<int> neverEvent1 = new(never, true, timeline);
-            PassiveDynamicEvent<int> neverEvent2 = new(never, false, timeline);
+            TimeOrNever<int> notNever = new(5); //replace with Never later
+            PassiveDynamicEvent<int> neverEvent1 = new(notNever, true, timeline);
+            PassiveDynamicEvent<int> neverEvent2 = new(notNever, false, timeline);
 
             //Add them out of order to ensure that we sort them
             timeline.AddEvent(card3);
@@ -1029,7 +1028,8 @@ namespace Timeline_Test
             timeline.AddPossibleEvent(neverEvent2);
 
             //Make the never events never
-            never.IsNever = true;
+            neverEvent1.TimeRemaining = new(true);
+            neverEvent2.TimeRemaining = new(true);
 
             Assert.Throws<InvalidOperationException>(() => timeline.DebugChangePhase(TimelinePhase.Cleaning));
             int stepsTaken = 5;

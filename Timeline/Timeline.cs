@@ -249,7 +249,7 @@ namespace Timeline
                 throw new InvalidOperationException("There's already an instant action event to process. Don't look for another one.");
             }
             // Keep track of the earliest time remaining among the possible events
-            TimeOrNever<T> timeToBeat = new();
+            TimeOrNever<T> timeToBeat = new(false);
             foreach (Okazo<T> e in PossibleEvents)
             {
                 if (e.TimeRemaining.CompareTo(timeToBeat) > 0) //Note that if e.TimeRemaining is Never, then it will be greater than timeToBeat, so we don't need to check for that explicitly.
