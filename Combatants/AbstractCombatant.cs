@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Meters;
+using Rationalz;
 using Timeline;
 
 namespace Combatants
@@ -57,6 +58,23 @@ namespace Combatants
         /// </summary>
         public abstract bool IsOtherwiseIncapacitated { get; }
         #endregion
+        #region Generic Allowed Properties
+        //These are collections of properties that may or may not be needed stored in a standard way
+
+        /// <summary>
+        /// What status effects are applying to this combatant. Note that they don't have durations, those are set by events adding and removing them
+        /// </summary>
+        public abstract ISet<StatusEffects> StatusEffects { get; set; }
+        /// <summary>
+        /// Additional elements represented by meters that others might look to modify
+        /// </summary>
+        public abstract IDictionary<MeterTypes,IMeter<T>> AdditionalMeters { get; set; }
+        /// <summary>
+        /// Stores the stats that can be modified and what the current stages are. (+1 is double, +2 triple, -1 half, -2 third)
+        /// </summary>
+        public abstract IDictionary<CombatStats,AbstractMeter<T,Rational<long>>> StatChangeStages {  get; set; }
+        #endregion
+
         #region Pace, Speed, and Turns
         //"Pace" is a general term for properties about when a combatant can act.
         //Speed is a specific property used in relation to other combatants' speeds to determine when they can act.
@@ -84,7 +102,26 @@ namespace Combatants
         /// </summary>
         /// <remarks>Note that this can be null. If it is, then a meter isn't involved in when going next will happen</remarks>
         public abstract AbstractMeter<T, T>? DelayBar { get; }
+        /// <summary>
+        /// The event that should run next once the DelayBar finishes. Null when the delay bar isn't in use.
+        /// </summary>
+        public abstract AbstractThresholdEvent<T,T>? UponDelayCompletion {  get; }
         #endregion
-
+        #region Deligates Handler
+        /// <summary>
+        /// Default handler for events that involve this combatant. 
+        /// If an event is created not by this combatant that involves this combatant, it will subscribe it to this handler, so ensure this has cases for that.
+        /// </summary>
+        /// <param name="_">Ignored source of the Occur event (since the second parameter is the same but typed)</param>
+        /// <param name="okazo">The Okazo that this combatant needs to be made aware of</param>
+        public abstract void OnOccur(object _,Okazo<T> okazo);
+        /// <summary>
+        /// Should be used for events that this combatant makes for itself.
+        /// Event handler
+        /// </summary>
+        /// <param name="_">Ignored source of the Occur event (since the second parameter is the same but typed)</param>
+        /// <param name="okazo">The Okazo that this combatant needs to be made aware of</param>
+        protected abstract void OnOccurSelf(object _, Okazo<T> okazo);
+        #endregion
     }
 }
