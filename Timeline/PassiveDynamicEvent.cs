@@ -62,7 +62,7 @@ namespace Timeline
         /// Which timeline this event belongs to.
         /// Used for advancing this event.
         /// </summary>
-        protected Timeline<T> OwningTimeline { get; }
+        public Timeline<T> OwningTimeline { get; }
         /// <summary>
         /// Main constructor. used when you have a specific time in mind for when this event should occur,
         /// or want to make very clear it isn't currently able to occur.

@@ -34,7 +34,7 @@ namespace Timeline
 
         public override event Occur<T>? Occurring;
 
-        protected Timeline<T> OwningTimeline { get; }
+        public Timeline<T> OwningTimeline { get; }
 
         /// <summary>
         /// Guarentee that there's at least one difference between two cards
