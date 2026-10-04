@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CoreMetrics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -89,6 +90,45 @@ namespace Timeline
                 }
             }
             return 0;
+        }
+        /// <summary>
+        /// Creates a basic Card. In a subclass, this should be overridden to create a new instance of the subclass.
+        /// </summary>
+        /// <param name="timeToEvent"></param>
+        /// <param name="owningTimeline"></param>
+        /// <returns>A BaseCard (that is internally a Card)</returns>
+        protected override BaseCard<T> CreateEmptyForClone(T timeToEvent, Timeline<T> owningTimeline)
+        {
+            return new Card<T, F>(timeToEvent, owningTimeline, Priority);
+        }
+        /// <summary>
+        /// Copies all relevant properties from the current card instance to the specified clone, including the Face
+        /// property if applicable.
+        /// </summary>
+        /// <param name="clone">The card instance to which properties are copied.</param>
+        /// <param name="context">The context for the cloning operation.</param>
+        /// <exception cref="UnrecoverableCloneException">Thrown when the cloned instance is not a Card somehow.</exception>
+        protected override void CopyPropertiesForClone(BaseCard<T> clone, CloneContext context)
+        {
+            base.CopyPropertiesForClone(clone, context);
+            if (clone is Card<T, F> cardClone)
+            {
+                if (Face is null)
+                {
+                    return;
+                }
+                if (Face is ICombatCloneable cloneableFace)
+                {
+                    cardClone.Face = (F)cloneableFace.Clone(context);
+                }
+                else 
+                {
+                    //If this face type doesn't implement ICombatCloneable and it isn't a value type, put specially handling here.
+                    cardClone.Face = Face;
+                }
+                return; //Leave before we throw the exception, since the error didn't happen if we got here.
+            }
+            throw new UnrecoverableCloneException("Somehow, we cloned a card and got a different type back. This should never happen.");
         }
     }
 }

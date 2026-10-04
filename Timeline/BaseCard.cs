@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Timeline.OkazoOptionalProperties;
@@ -57,7 +58,7 @@ namespace Timeline
             }
             TimeToEvent -= e;
         }
-        
+
         /// <summary>
         /// Used to mark that this event is occuring. Should only be called by the timeline, 
         /// and only when TimeToEvent is zero, since otherwise the event shouldn't be occuring yet.
@@ -92,6 +93,48 @@ namespace Timeline
         public override string ToString()
         {
             return $"BaseCard (UUID: {UUID}) with TimeToEvent: {TimeToEvent}";
+        }
+        /// <summary>
+        /// Standard clone method for a BaseCard and subclasses. Subclasses should override CreateEmptyForClone and CopyPropertiesForClone.
+        /// </summary>
+        /// <param name="context">The context for the cloning operation.</param>
+        /// <returns>A clone of the current BaseCard instance.</returns>
+        /// <exception cref="UnrecoverableCloneException">Thrown when the owning timeline has not been cloned yet.</exception>
+        public override object Clone(CloneContext context)
+        {
+            if (context.TryGet(this, out BaseCard<T> existingClone))
+            {
+                return existingClone;
+            }
+            if (!context.TryGet(OwningTimeline, out Timeline<T> owningTimelineClone))
+            {
+                throw new UnrecoverableCloneException("Owning timeline must be cloned before cloning any events.");
+            }
+            var clone = CreateEmptyForClone(TimeToEvent, owningTimelineClone);
+            context.Register(this, clone);
+            CopyPropertiesForClone(clone,context);
+            return clone;
+        }
+        /// <summary>
+        /// Override this method in subclasses to create a new instance of the subclass instead of a BaseCard.
+        /// Exists because we want Clone to work in subclasses
+        /// </summary>
+        /// <param name="timeToEvent">How long until this event?</param>
+        /// <param name="owningTimeline">The timeline that should own the clone</param>
+        /// <returns>The newly created instance of the subclass</returns>
+        protected virtual BaseCard<T> CreateEmptyForClone(T timeToEvent, Timeline<T> owningTimeline)
+        {
+            return new BaseCard<T>(timeToEvent, owningTimeline);
+        }
+        /// <summary>
+        /// Override this method (but always call base.CopyPropertiesForClone) in subclasses to copy any additional properties to the clone.
+        /// </summary>
+        /// <param name="clone">The new clone to modify</param>
+        /// <param name="context">The clone context, in case you need to clone or reference clones of any other objects</param>
+        protected virtual void CopyPropertiesForClone(BaseCard<T> clone, CloneContext context)
+        {
+            clone.UUID = UUID;
+            clone.HaltsInstantAction = HaltsInstantAction;
         }
     }
 }

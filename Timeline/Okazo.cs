@@ -14,7 +14,7 @@ namespace Timeline
     /// Comparison must sort by time remaining first, then by some other factor to ensure a deterministic order of events that occur at the same time. This is important to ensure that the timeline behaves predictably and that events are processed in a consistent order, even when they have the same time remaining.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public abstract class Okazo<T> : IComparable<Okazo<T>>, IEquatable<Okazo<T>>, IAdvanceable<T> where T : INumber<T>
+    public abstract class Okazo<T> : IComparable<Okazo<T>>, IEquatable<Okazo<T>>, IAdvanceable<T>, ICombatCloneable where T : INumber<T>
     {
         /// <summary>
         /// Amount of time until this event occurs. If this event is dynamic, this value may change based on other factors besides time advancing.
@@ -78,5 +78,12 @@ namespace Timeline
         /// Derived types must provide equality semantics against other events.
         /// </summary>
         public abstract bool Equals(Okazo<T>? other);
+
+        /// <summary>
+        /// Derived types must be able to clone themselves with CloneContext for reference
+        /// </summary>
+        /// <param name="context">What other objects should be cloned</param>
+        /// <returns>The clone of this object</returns>
+        public abstract object Clone(CloneContext context);
     }
 }

@@ -141,5 +141,27 @@ namespace Timeline
             }
             return $"PassiveDynamicEvent (UUID:{UUID}) with {TimeRemaining} remaining";
         }
+        /// <summary>
+        /// Clones this event. Not made for subclass extension, but given that dynamic events usually have state computed, likely you won't subclass this.
+        /// If you do, override this completely.
+        /// </summary>
+        /// <param name="context">The context for the cloning operation.</param>
+        /// <returns>A clone of the current PassiveDynamicEvent instance.</returns>
+        /// <exception cref="UnrecoverableCloneException">Thrown when the owning timeline has not been cloned yet.</exception>
+        public override object Clone(CloneContext context)
+        {
+            if (context.TryGet(this, out PassiveDynamicEvent<T> existingClone))
+            {
+                return existingClone;
+            }
+            if (!context.TryGet(OwningTimeline, out Timeline<T> owningTimelineClone))
+            {
+                throw new UnrecoverableCloneException("Owning timeline must be cloned before cloning any events.");
+            }
+            var clone = new PassiveDynamicEvent<T>(TimeRemaining, _couldOccur, owningTimelineClone); //Don't use two arg constructor since the timeline should handle adding the event
+            context.Register(this, clone);
+            clone.UUID = this.UUID;
+            return clone;
+        }
     }
 }
