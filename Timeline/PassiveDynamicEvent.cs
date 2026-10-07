@@ -120,8 +120,7 @@ namespace Timeline
         }
 
         /// <summary>
-        /// Simple UUID-based equality. Two events with the same UUID should be the same event, so if the other is the same type with the same UUID, we return true, otherwise false.
-        /// Please overload, given we don't even care about the TimeRemaining or CouldOccur
+        /// Simple UUID and type based equality. Don't override this unless you're only adding immutable properties to the subclass
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
@@ -133,6 +132,7 @@ namespace Timeline
             }
             return ((PassiveDynamicEvent<T>)other).UUID == this.UUID;
         }
+        public override int GetHashCode() => HashCode.Combine(GetType(), UUID);
         public override string ToString()
         {
             if (TimeRemaining.IsNever)

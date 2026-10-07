@@ -32,26 +32,9 @@ namespace Timeline
 
         #region Overrides
 
-        /// <summary>
-        /// Compares this card to another card for equality.
-        /// Checks time, priority, face (if it supports equality), and UUID.
-        /// If two cards aren't the same type or the other is null, always false.
-        /// </summary>
-        /// <param name="other">Other card.</param>
-        /// <returns>True if the cards are equal, false otherwise.</returns>
-        public override bool Equals(Okazo<T>? other)
-        {
-            if (other is null || other.GetType() != this.GetType())
-                return false;
-            Card<T, F> otherCard = (Card<T, F>)other;
-            if (TimeToEvent != otherCard.TimeToEvent)
-                return false;
-            if (Priority != otherCard.Priority)
-                return false;
-            if (Face is IEquatable<F> equatableFace && !equatableFace.Equals(otherCard.Face))
-                return false;
-            return UUID == otherCard.UUID;
-        }
+        // Equals is inherited from BaseCard<T> and compares only type + UUID (identity).
+        // For a "same kind of effect" / content comparison, compare the relevant properties
+        // at the call site (or add a dedicated method), not via Equals.
 
         public override string ToString()
         {
