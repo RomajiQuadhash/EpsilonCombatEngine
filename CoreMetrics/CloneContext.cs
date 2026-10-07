@@ -25,12 +25,21 @@ namespace CoreMetrics
         /// <param name="clone">The cloned object to use.</param>
         /// <returns>true if a clone was found. If False, we should be using GetOrClone or do an alternate method.</returns>
         /// <remarks>Use this when linking, since by then, everything should be cloned. Only use this and not GetOrClone if you haven't registered yourself yet to avoid recursion</remarks>
+        /// <exception cref="UnrecoverableCloneException">Thrown if the existing clone is not of the expected type.
+        /// This means you have registered a clone with an incompatible type.</exception>
         public bool TryGet<T>(T original, out T clone) where T : class
         {
             ArgumentNullException.ThrowIfNull(original);
             if (_map.TryGetValue(original, out object? existing))
             {
-                clone = (T)existing;
+                if (existing is not T typed)
+                {
+                    throw new UnrecoverableCloneException(
+                        $"Invalid clone registration: original {original.GetType().FullName} " +
+                        $"was registered with a clone of type {existing.GetType().FullName}, " +
+                        $"which is not assignable to {typeof(T).FullName}.");
+                }
+                clone = typed;
                 return true;
             }
             clone = null!;
