@@ -73,23 +73,9 @@ namespace Timeline.OkazoOptionalProperties
             if (ret != 0) return ret;
 
             //Eventually, try the UUID, which should be the last tiebreaker.
-            if (x is IOkUUID okXWithUUID)
-            {
-                if (y is IOkUUID okYWithUUID)
-                {
-                    ret = okXWithUUID.UUID.CompareTo(okYWithUUID.UUID);
-                }
-                else
-                {
-                    //If only x has a UUID, it should come after y, since it has more specific information.
-                    ret = 1;
-                }
-            } else if (y is IOkUUID)
-            {
-                //If only y has a UUID, it should come after x, since it has more specific information.
-                ret = -1;
-            }
+            ret = x.UUID.CompareTo(y.UUID);
             if (ret != 0) return ret;
+            //This can only happen if two events are different types and have the same UUIDs
             throw new ArgumentException("Two events can't be compared but are not equal.");
         }
         /// <summary>

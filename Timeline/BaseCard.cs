@@ -15,7 +15,7 @@ namespace Timeline
     /// Useful for unit tests, but you should probably use Card or a subclass, since a priority is useful.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public class BaseCard<T> : Okazo<T>, IOkUUID where T : INumber<T>
+    public class BaseCard<T> : Okazo<T> where T : INumber<T>
     {
         /// <summary>
         /// A card can always occur, since it is about a specific time in the future.
@@ -40,7 +40,7 @@ namespace Timeline
         /// Guarentee that there's at least one difference between two cards
         /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
         /// </summary>
-        public int UUID { get; set; } = Guid.NewGuid().GetHashCode();
+        public override int UUID { get; set; } = Guid.NewGuid().GetHashCode();
 
         public BaseCard(T timeToEvent, Timeline<T> owningTimeline)
         {

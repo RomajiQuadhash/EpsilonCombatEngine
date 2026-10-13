@@ -32,6 +32,10 @@ namespace Timeline
         /// would likely add events to the timeline and that can only be fully done in Open phase.
         /// </summary>
         public abstract bool HaltsInstantAction { get; set; }
+        /// <summary>
+        /// Guarentee that there's at least one difference between two events
+        /// </summary>
+        public abstract int UUID { get; set; }
 
         /// <summary>
         /// Compares the current instance with another Okazo<T> object and returns an integer that indicates their
