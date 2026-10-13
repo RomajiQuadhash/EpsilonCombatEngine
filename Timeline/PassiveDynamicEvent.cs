@@ -119,20 +119,6 @@ namespace Timeline
             OwningTimeline.Advance -= OnAdvance;
         }
 
-        /// <summary>
-        /// Simple UUID and type based equality. Don't override this unless you're only adding immutable properties to the subclass
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        public override bool Equals(Okazo<T>? other)
-        {
-            if (other == null || other.GetType() != this.GetType())
-            {
-                return false;
-            }
-            return ((PassiveDynamicEvent<T>)other).UUID == this.UUID;
-        }
-        public override int GetHashCode() => HashCode.Combine(GetType(), UUID);
         public override string ToString()
         {
             if (TimeRemaining.IsNever)

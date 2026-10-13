@@ -79,9 +79,14 @@ namespace Timeline
         public abstract void OnAdvance(object? sender, T timeElapsed);
 
         /// <summary>
-        /// Derived types must provide equality semantics against other events.
+        /// Note that this is intentionally only UUID and type to match with what is being hashed.
         /// </summary>
-        public abstract bool Equals(Okazo<T>? other);
+        public bool Equals(Okazo<T>? other) =>
+            other is not null && other.GetType() == GetType() && other.UUID == UUID;
+
+        public override bool Equals(object? obj) => Equals(obj as Okazo<T>);
+
+        public override int GetHashCode() => HashCode.Combine(GetType(), UUID);
 
         /// <summary>
         /// Derived types must be able to clone themselves with CloneContext for reference

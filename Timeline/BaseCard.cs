@@ -75,21 +75,6 @@ namespace Timeline
             Occurring?.Invoke(this, this);
             OwningTimeline.Advance -= OnAdvance;
         }
-        /// <summary>
-        /// Compares type and UUID to determine equality. This does not compare content, since the primary purpose is to work well in collections/dictionaries.
-        /// </summary>
-        /// <param name="other">The other Okazo<T> to compare with.</param>
-        /// <returns></returns>
-        public override bool Equals(Okazo<T>? other)
-        {
-            if (other == null || other.GetType() != this.GetType())
-            {
-                return false;
-            }
-            return UUID == ((BaseCard<T>)other).UUID;
-        }
-
-        public override int GetHashCode() => HashCode.Combine(GetType(), UUID);
 
         public override string ToString()
         {
