@@ -29,6 +29,11 @@ namespace Combatants
 
         public abstract object Clone(CloneContext context);
 
+        /// <summary>
+        /// How to tell this combatant apart from others and trace this back to the original from a clone.
+        /// </summary>
+        public int UUID { get; set; } = Guid.NewGuid().GetHashCode();
+
         #region Status Flags
         //These should be used for universal status flags, like "is dead", "is KO'd", "can be killed", etc.
         //Other flags should likely use some kind of set or dictionary for more flexibility, extensibility, and keeping core ideas separate from more specific ideas.
