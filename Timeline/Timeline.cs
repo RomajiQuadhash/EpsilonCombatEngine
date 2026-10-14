@@ -1,6 +1,7 @@
 ﻿using CoreMetrics;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Timeline
 {
-    public class Timeline<T> where T : INumber<T>
+    public class Timeline<T> : ICombatCloneable where T : INumber<T>
     {
         /// <summary>
         /// The current list of events on the timeline, sorted by time remaining.
@@ -332,6 +333,44 @@ namespace Timeline
             Phase = newPhase;
             throw new InvalidOperationException("DebugChangePhase should only be used for testing purposes. Don't use this in production code.");
         }
+        /// <summary>
+        /// Gets what is subscribing to Advance. If you're not a unit test or debug menu, you probably shouldn't call this.
+        /// </summary>
+        /// <remarks>Does basic validation on the way. If these are tripped, something is bad</remarks>
+        /// <returns>A list of objects </returns>
+        /// <exception cref="InvalidOperationException">If you aren't subscribing with an IAdvancable object or are subscribing with a static item, this is thrown.</exception>
+        public IReadOnlyList<IAdvanceable<T>> GetAdvanceSubscribers()
+        {
+            if (Advance is null) return [];
+            List<IAdvanceable<T>> ret= [];
+            foreach (var item in Advance.GetInvocationList())
+            {
+                if (item.Target is null)
+                {
+                    throw new InvalidOperationException($"{item.Method} is a static method and should not be subscribed to Advance");
+                }
+                if(item.Target is not IAdvanceable<T> advanceableTarget)
+                {
+                    throw new InvalidOperationException($"{item.Target} is subscribing to Advance but doesn't implement {nameof(IAdvanceable<T>)}.");
+                }
+                if (item.Method.Name != nameof(IAdvanceable<T>.OnAdvance))
+                {
+                    System.Diagnostics.Debug.WriteLine($"{item.Target} has subscribed to Advance with the method {item.Method.Name}, not {nameof(IAdvanceable<T>.OnAdvance)}.");
+                }
+                ret.Add(advanceableTarget);
+            }
+            return ret;
+        }
+        /// <summary>
+        /// Calls Rewire on every event in this timeline's Events and PossibleEvents.
+        /// This is an orchestration helper, since Timeline 
+        /// </summary>
+        /// <param name="context">The context after cloning everything</param>
+        public void RewireAllEvents(CloneContext context)
+        {
+            foreach (var e in Events) e.Rewire(context); //All events implement ICombatRewireable so we don't need to type cast and check.
+            foreach (var e in PossibleEvents) e.Rewire(context);
+        }
         #endregion
         #region Static Public Helper(s)
         //It is occasionally useful to simulate the functionality of a phase or phases without actually running that phase.
@@ -381,6 +420,34 @@ namespace Timeline
             //Finally, add any promotable events to events. Sorting will occur later
             events.AddRange(promotableEvents);
             return events.Count != 0;
+        }
+        #endregion
+        #region Cloning
+        public object Clone(CloneContext context)
+        {
+            PhaseValid([TimelinePhase.Open]); //We shouldn't be cloning a timeline that is in the middle of processing events, since the point is making decisions and that only can happen in Open phase.
+            if (context.TryGet(this, out Timeline<T> existing)) return existing;
+
+            Timeline<T> clone = new();
+            context.Register(this, clone);
+
+            //Clone the events and possible events. It's okay if they're "in the wrong place" (like an event that is Never in Events here but ends up in PossibleEvents in the clone),
+            //since during Purge and Sort, they'll be moved to the correct place.
+
+            foreach (Okazo<T> okazo in Events)
+            {
+                Okazo<T> clonedOkazo = context.GetOrClone(okazo); //Okazo<T>s that might be relying on other properties outside the list of events will clone those things too. That is fine, since the context will make sure later that any attempts to clone again will short circuit
+                clone.AddEvent(clonedOkazo); //Note that Never events will be added to PossibleEvents, which is fine since Purge would move them there anyway.
+            }
+            foreach (Okazo<T> okazo in PossibleEvents)
+            {
+                Okazo<T> clonedOkazo = context.GetOrClone(okazo);
+                clone.AddPossibleEvent(clonedOkazo); //We might be adding a non-Never event to PossibleEvents, which is fine since Purge would move it to Events anyway.
+            }
+
+            //We don't clone InstantActionEvent since it is always Null when the timeline is in Open phase. Timelines also start Open and Not Terminated so we don't set those either.
+            //the Advance event is subscribed to by the events themselves, so we don't clone that either.
+            return clone;
         }
         #endregion
     }

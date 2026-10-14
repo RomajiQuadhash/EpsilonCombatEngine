@@ -16,7 +16,7 @@ namespace Timeline
     /// </summary>
     /// <remarks>If you're updating the TimeRemaining frequently, consider if a dedicated Dynamic event class should be made.</remarks>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public class PassiveDynamicEvent<T> : Okazo<T>, IOkUUID where T : INumber<T>
+    public class PassiveDynamicEvent<T> : Okazo<T> where T : INumber<T>
     {
         /// <summary>
         /// The TimeOrNever representing how long until this event occurs.
@@ -52,17 +52,16 @@ namespace Timeline
                 throw new InvalidOperationException("An event with a time remaining will occur.");
             } }
 
-        public override event Occur<T>? Occurring;
         /// <summary>
         /// Guarentee that there's at least one difference between two events.
         /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
         /// </summary>
-        public int UUID { get; set; } = Guid.NewGuid().GetHashCode();
+        public override int UUID { get; set; } = Guid.NewGuid().GetHashCode();
         /// <summary>
         /// Which timeline this event belongs to.
         /// Used for advancing this event.
         /// </summary>
-        protected Timeline<T> OwningTimeline { get; }
+        public Timeline<T> OwningTimeline { get; }
         /// <summary>
         /// Main constructor. used when you have a specific time in mind for when this event should occur,
         /// or want to make very clear it isn't currently able to occur.
@@ -115,24 +114,10 @@ namespace Timeline
             {
                 throw new InvalidOperationException("Events should only occur at time zero.");
             }
-            Occurring?.Invoke(this, this);
+            InvokeOccurring();
             OwningTimeline.Advance -= OnAdvance;
         }
 
-        /// <summary>
-        /// Simple UUID-based equality. Two events with the same UUID should be the same event, so if the other is the same type with the same UUID, we return true, otherwise false.
-        /// Please overload, given we don't even care about the TimeRemaining or CouldOccur
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns></returns>
-        public override bool Equals(Okazo<T>? other)
-        {
-            if (other == null || other.GetType() != this.GetType())
-            {
-                return false;
-            }
-            return ((PassiveDynamicEvent<T>)other).UUID == this.UUID;
-        }
         public override string ToString()
         {
             if (TimeRemaining.IsNever)
@@ -140,6 +125,28 @@ namespace Timeline
                 return $"PassiveDynamicEvent (UUID:{UUID}) without a time remaining. CouldOccur:{CouldOccur}";
             }
             return $"PassiveDynamicEvent (UUID:{UUID}) with {TimeRemaining} remaining";
+        }
+        /// <summary>
+        /// Clones this event. Not made for subclass extension, but given that dynamic events usually have state computed, likely you won't subclass this.
+        /// If you do, override this completely.
+        /// </summary>
+        /// <param name="context">The context for the cloning operation.</param>
+        /// <returns>A clone of the current PassiveDynamicEvent instance.</returns>
+        /// <exception cref="UnrecoverableCloneException">Thrown when the owning timeline has not been cloned yet.</exception>
+        public override object Clone(CloneContext context)
+        {
+            if (context.TryGet(this, out PassiveDynamicEvent<T> existingClone))
+            {
+                return existingClone;
+            }
+            if (!context.TryGet(OwningTimeline, out Timeline<T> owningTimelineClone))
+            {
+                throw new UnrecoverableCloneException("Owning timeline must be cloned before cloning any events.");
+            }
+            var clone = new PassiveDynamicEvent<T>(TimeRemaining, _couldOccur, owningTimelineClone); //Don't use two arg constructor since the timeline should handle adding the event
+            context.Register(this, clone);
+            clone.UUID = this.UUID;
+            return clone;
         }
     }
 }

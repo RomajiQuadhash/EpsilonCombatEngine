@@ -14,7 +14,7 @@ namespace Timeline
     /// Comparison must sort by time remaining first, then by some other factor to ensure a deterministic order of events that occur at the same time. This is important to ensure that the timeline behaves predictably and that events are processed in a consistent order, even when they have the same time remaining.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public abstract class Okazo<T> : IComparable<Okazo<T>>, IEquatable<Okazo<T>>, IAdvanceable<T> where T : INumber<T>
+    public abstract class Okazo<T> : IComparable<Okazo<T>>, IEquatable<Okazo<T>>, IAdvanceable<T>, ICombatCloneable, ICombatRewireable where T : INumber<T>
     {
         /// <summary>
         /// Amount of time until this event occurs. If this event is dynamic, this value may change based on other factors besides time advancing.
@@ -32,6 +32,10 @@ namespace Timeline
         /// would likely add events to the timeline and that can only be fully done in Open phase.
         /// </summary>
         public abstract bool HaltsInstantAction { get; set; }
+        /// <summary>
+        /// Guarentee that there's at least one difference between two events
+        /// </summary>
+        public abstract int UUID { get; set; }
 
         /// <summary>
         /// Compares the current instance with another Okazo<T> object and returns an integer that indicates their
@@ -60,7 +64,14 @@ namespace Timeline
         /// <summary>
         /// Raised when this event occurs, allowing listeners to react to the event and update their state accordingly.
         /// </summary>
-        public abstract event Occur<T>? Occurring;
+        public event Occur<T>? Occurring;
+        /// <summary>
+        /// does Occuring.Invoke. Needed to raise it up higher
+        /// </summary>
+        protected void InvokeOccurring()
+        {
+            Occurring?.Invoke(this, this);
+        }
 
         /// <summary>
         /// Executes the event, and raises the Occurring event to notify listeners that the event has occurred and take other actions. 
@@ -75,8 +86,95 @@ namespace Timeline
         public abstract void OnAdvance(object? sender, T timeElapsed);
 
         /// <summary>
-        /// Derived types must provide equality semantics against other events.
+        /// Note that this is intentionally only UUID and type to match with what is being hashed.
         /// </summary>
-        public abstract bool Equals(Okazo<T>? other);
+        public bool Equals(Okazo<T>? other) =>
+            other is not null && other.GetType() == GetType() && other.UUID == UUID;
+
+        public override bool Equals(object? obj) => Equals(obj as Okazo<T>);
+
+        public override int GetHashCode() => HashCode.Combine(GetType(), UUID);
+
+        /// <summary>
+        /// Derived types must be able to clone themselves with CloneContext for reference
+        /// </summary>
+        /// <param name="context">What other objects should be cloned</param>
+        /// <returns>The clone of this object</returns>
+        public abstract object Clone(CloneContext context);
+        /// <summary>
+        /// Rewires the subscribers related to this Okazo.
+        /// </summary>
+        /// <param name="context">The filled clone context</param>
+        /// <exception cref="UnrecoverableCloneException">Thrown if this doesn't have a clone or if internal rewiring fails</exception>
+        /// <remarks>Don't change this in subclasses. Instead, modify RewireOthers</remarks>
+        public void Rewire(CloneContext context)
+        {
+            if (!context.TryGet(this, out Okazo<T> clone))
+            {
+                throw new UnrecoverableCloneException(
+                    $"Rewire called on {GetType().Name} ({this}) that has no clone registered.");
+            }
+            //Ensure we always relink Occuring
+            RewireOccurring(context, clone);
+            //Allow extensibility for subclasses.
+            RewireOthers(context, clone);
+        }
+        
+        private void RewireOccurring(CloneContext context, Okazo<T> clone)
+        {
+            if (Occurring is null) return;  // No extrinsic subscribers.
+
+            foreach (var handler in Occurring.GetInvocationList())
+            {
+                if (handler.Target is null)
+                {
+                    throw new UnrecoverableCloneException(
+                        $"{handler.Method} is a static method and should not be subscribed to Occurring");
+                }
+
+                if (!context.TryGet(handler.Target, out object subscriberClone))
+                {
+                    throw new UnrecoverableCloneException(
+                        $"Subscriber to Occurring {handler.Target} has no clone registered. " +
+                        "This suggests the cloning tree failed to reach all elements.");
+                }
+
+                var clonedHandler = (Occur<T>)Delegate.CreateDelegate(
+                    typeof(Occur<T>), subscriberClone, handler.Method);
+                clone.Occurring += clonedHandler;
+            }
+        }
+        /// <summary>
+        /// Establishes links for any additional events this Okazo has
+        /// </summary>
+        /// <param name="context">The fully populated clone dictionary</param>
+        /// <param name="clone">The clone of this event</param>
+        /// <exception cref="UnrecoverableCloneException">Thrown if there are any issues with finding clones of the subscribers</exception>
+        /// <remarks>In the rare case you implement something here, any subclasses should call base or you should seal it and provide a new empty protected virtual method. But that's probably a sign things have gotten messy.</remarks>
+        protected virtual void RewireOthers(CloneContext context, Okazo<T> clone)
+        {
+
+        }
+
+        /// <summary>
+        /// Gets all the objects looking at Occuring.
+        /// If you're not a unit test or debug menu, you shouldn't be calling this.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">Thrown if a static method is subscribed to Occuring (which would fail when cloned)</exception>
+        public IReadOnlyList<object> GetOccurringSubscribers()
+        {
+            if (Occurring is null) return [];
+            List<object> result = [];
+            foreach (var d in Occurring.GetInvocationList())
+            {
+                if (d.Target is not null) result.Add(d.Target);
+                else
+                {
+                    throw new InvalidOperationException($"Static method {d.Method} is subscribed to Occuring, which is not supported.");
+                }
+            }
+            return result;
+        }
     }
 }

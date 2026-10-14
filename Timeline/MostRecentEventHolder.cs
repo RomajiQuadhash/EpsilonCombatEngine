@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using CoreMetrics;
+using System.Numerics;
 
 namespace Timeline
 {
@@ -7,12 +8,26 @@ namespace Timeline
     /// TODO: Consider making it trigger its own event when the most recent event is updated, so that other objects can react to it.
     /// </summary>
     /// <typeparam name="T">Numeric type used for the timeline</typeparam>
-    public class MostRecentEventHolder<T> where T : INumber<T>
+    public class MostRecentEventHolder<T> : ICombatCloneable where T : INumber<T>
     {
         public Okazo<T>? MostRecentEvent { get;  set; }
         public void OnTrigger(object? _, Okazo<T> mostRecentEvent)
         {
             MostRecentEvent = mostRecentEvent;
+        }
+        public object Clone(CloneContext context)
+        {
+            if (context.TryGet(this, out var existingClone))
+            {
+                return existingClone;
+            }
+            var clone = new MostRecentEventHolder<T>();
+            context.Register(this, clone);
+            if (MostRecentEvent != null)
+            {
+                clone.MostRecentEvent = context.GetOrClone(MostRecentEvent);
+            }
+            return clone;
         }
     }
 }

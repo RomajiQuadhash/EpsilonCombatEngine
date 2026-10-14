@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CoreMetrics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -16,7 +17,7 @@ namespace Timeline
     /// <param name="timeToEvent">How far in the future this card is</param>
     /// <param name="owningTimeline">What timeline this Card should be owned by</param>
     /// <param name="priority">The priority of this card</param>
-    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkUUID, IOkPriority, IOkTiebreaker<T> where T : INumber<T>
+    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkPriority, IOkTiebreaker<T> where T : INumber<T>
     {
         /// <summary>
         /// Priority of this card. If not present, treated as "None". Used as a tiebreaker for cards that occur at the same time. Lower numbers occur first. If this value is before "None", it will occur before any events without a priority. "None" and null are effectively the same, but prefer "None" to make it clear that the event was intentionally given no priority, rather than just forgetting to set a priority.
@@ -31,26 +32,9 @@ namespace Timeline
 
         #region Overrides
 
-        /// <summary>
-        /// Compares this card to another card for equality.
-        /// Checks time, priority, face (if it supports equality), and UUID.
-        /// If two cards aren't the same type or the other is null, always false.
-        /// </summary>
-        /// <param name="other">Other card.</param>
-        /// <returns>True if the cards are equal, false otherwise.</returns>
-        public override bool Equals(Okazo<T>? other)
-        {
-            if (other is null || other.GetType() != this.GetType())
-                return false;
-            Card<T, F> otherCard = (Card<T, F>)other;
-            if (TimeToEvent != otherCard.TimeToEvent)
-                return false;
-            if (Priority != otherCard.Priority)
-                return false;
-            if (Face is IEquatable<F> equatableFace && !equatableFace.Equals(otherCard.Face))
-                return false;
-            return UUID == otherCard.UUID;
-        }
+        // Equals is inherited from BaseCard<T> and compares only type + UUID (identity).
+        // For a "same kind of effect" / content comparison, compare the relevant properties
+        // at the call site (or add a dedicated method), not via Equals.
 
         public override string ToString()
         {
@@ -89,6 +73,45 @@ namespace Timeline
                 }
             }
             return 0;
+        }
+        /// <summary>
+        /// Creates a basic Card. In a subclass, this should be overridden to create a new instance of the subclass.
+        /// </summary>
+        /// <param name="timeToEvent"></param>
+        /// <param name="owningTimeline"></param>
+        /// <returns>A BaseCard (that is internally a Card)</returns>
+        protected override BaseCard<T> CreateEmptyForClone(T timeToEvent, Timeline<T> owningTimeline)
+        {
+            return new Card<T, F>(timeToEvent, owningTimeline, Priority);
+        }
+        /// <summary>
+        /// Copies all relevant properties from the current card instance to the specified clone, including the Face
+        /// property if applicable.
+        /// </summary>
+        /// <param name="clone">The card instance to which properties are copied.</param>
+        /// <param name="context">The context for the cloning operation.</param>
+        /// <exception cref="UnrecoverableCloneException">Thrown when the cloned instance is not a Card somehow.</exception>
+        protected override void CopyPropertiesForClone(BaseCard<T> clone, CloneContext context)
+        {
+            base.CopyPropertiesForClone(clone, context);
+            if (clone is Card<T, F> cardClone)
+            {
+                if (Face is null)
+                {
+                    return;
+                }
+                if (Face is ICombatCloneable cloneableFace)
+                {
+                    cardClone.Face = (F)cloneableFace.Clone(context);
+                }
+                else 
+                {
+                    //If this face type doesn't implement ICombatCloneable and it isn't a value type, put specially handling here.
+                    cardClone.Face = Face;
+                }
+                return; //Leave before we throw the exception, since the error didn't happen if we got here.
+            }
+            throw new UnrecoverableCloneException("Somehow, we cloned a card and got a different type back. This should never happen.");
         }
     }
 }
