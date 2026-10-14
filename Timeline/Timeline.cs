@@ -361,6 +361,16 @@ namespace Timeline
             }
             return ret;
         }
+        /// <summary>
+        /// Calls Rewire on every event in this timeline's Events and PossibleEvents.
+        /// This is an orchestration helper, since Timeline 
+        /// </summary>
+        /// <param name="context">The context after cloning everything</param>
+        public void RewireAllEvents(CloneContext context)
+        {
+            foreach (var e in Events) e.Rewire(context); //All events implement ICombatRewireable so we don't need to type cast and check.
+            foreach (var e in PossibleEvents) e.Rewire(context);
+        }
         #endregion
         #region Static Public Helper(s)
         //It is occasionally useful to simulate the functionality of a phase or phases without actually running that phase.
