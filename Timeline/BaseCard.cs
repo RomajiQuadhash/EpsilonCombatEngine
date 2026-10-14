@@ -32,8 +32,6 @@ namespace Timeline
         /// </summary>
         public override TimeOrNever<T> TimeRemaining { get => new(TimeToEvent); set { throw new InvalidOperationException("Set the time with TimeToEvent"); } }
 
-        public override event Occur<T>? Occurring;
-
         public Timeline<T> OwningTimeline { get; }
 
         /// <summary>
@@ -72,7 +70,7 @@ namespace Timeline
             {
                 throw new InvalidOperationException("Events should only occur at time zero.");
             }
-            Occurring?.Invoke(this, this);
+            InvokeOccurring();
             OwningTimeline.Advance -= OnAdvance;
         }
 

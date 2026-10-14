@@ -52,7 +52,6 @@ namespace Timeline
                 throw new InvalidOperationException("An event with a time remaining will occur.");
             } }
 
-        public override event Occur<T>? Occurring;
         /// <summary>
         /// Guarentee that there's at least one difference between two events.
         /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
@@ -115,7 +114,7 @@ namespace Timeline
             {
                 throw new InvalidOperationException("Events should only occur at time zero.");
             }
-            Occurring?.Invoke(this, this);
+            InvokeOccurring();
             OwningTimeline.Advance -= OnAdvance;
         }
 

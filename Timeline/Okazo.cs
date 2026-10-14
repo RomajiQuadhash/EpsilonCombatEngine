@@ -64,7 +64,14 @@ namespace Timeline
         /// <summary>
         /// Raised when this event occurs, allowing listeners to react to the event and update their state accordingly.
         /// </summary>
-        public abstract event Occur<T>? Occurring;
+        public event Occur<T>? Occurring;
+        /// <summary>
+        /// does Occuring.Invoke. Needed to raise it up higher
+        /// </summary>
+        protected void InvokeOccurring()
+        {
+            Occurring?.Invoke(this, this);
+        }
 
         /// <summary>
         /// Executes the event, and raises the Occurring event to notify listeners that the event has occurred and take other actions. 
