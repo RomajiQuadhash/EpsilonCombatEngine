@@ -1,6 +1,7 @@
 ﻿using CoreMetrics;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -331,6 +332,34 @@ namespace Timeline
         {
             Phase = newPhase;
             throw new InvalidOperationException("DebugChangePhase should only be used for testing purposes. Don't use this in production code.");
+        }
+        /// <summary>
+        /// Gets what is subscribing to Advance. If you're not a unit test or debug menu, you probably shouldn't call this.
+        /// </summary>
+        /// <remarks>Does basic validation on the way. If these are tripped, something is bad</remarks>
+        /// <returns>A list of objects </returns>
+        /// <exception cref="InvalidOperationException">If you aren't subscribing with an IAdvancable object or are subscribing with a static item, this is thrown.</exception>
+        public IReadOnlyList<IAdvanceable<T>> GetAdvanceSubscribers()
+        {
+            if (Advance is null) return [];
+            List<IAdvanceable<T>> ret= [];
+            foreach (var item in Advance.GetInvocationList())
+            {
+                if (item.Target is null)
+                {
+                    throw new InvalidOperationException($"{item.Method} is a static method and should not be subscribed to Advance");
+                }
+                if(item.Target is not IAdvanceable<T> advanceableTarget)
+                {
+                    throw new InvalidOperationException($"{item.Target} is subscribing to Advance but doesn't implement {nameof(IAdvanceable<T>)}.");
+                }
+                if (item.Method.Name != nameof(IAdvanceable<T>.OnAdvance))
+                {
+                    System.Diagnostics.Debug.WriteLine($"{item.Target} has subscribed to Advance with the method {item.Method.Name}, not {nameof(IAdvanceable<T>.OnAdvance)}.");
+                }
+                ret.Add(advanceableTarget);
+            }
+            return ret;
         }
         #endregion
         #region Static Public Helper(s)
