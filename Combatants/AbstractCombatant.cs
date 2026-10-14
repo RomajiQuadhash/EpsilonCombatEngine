@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using CoreMetrics;
 using Meters;
 using Rationalz;
 using Timeline;
@@ -6,10 +7,10 @@ using Timeline;
 namespace Combatants
 {
     /// <summary>
-    /// 
+    /// Abstract theoretical class for a combatant (player or AI) in a combat. Holds all the stats, none of the decision making 
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    public abstract class AbstractCombatant<T> where T : INumber<T>
+    public abstract class AbstractCombatant<T> : ICombatCloneable where T : INumber<T> 
     {
         /// <summary>
         /// The timeline that this combatant is a part of.
@@ -21,6 +22,12 @@ namespace Combatants
         /// </summary>
         /// <remarks>Should be a type designed to take changes over time well.</remarks>
         public abstract required AbstractMeter<T,int> HealthMeter { get; set; }
+        /// <summary>
+        /// Shared across all combatants in a combat, holds who has the next turn
+        /// </summary>
+        public abstract CurrentTurnHolder<AbstractCombatant<T>> TurnHolder { get;}
+
+        public abstract object Clone(CloneContext context);
 
         #region Status Flags
         //These should be used for universal status flags, like "is dead", "is KO'd", "can be killed", etc.
