@@ -32,7 +32,7 @@ namespace Meters
         /// PlayerBleedStart, PlayerBleedStop, EnemyBleedStart, EnemyBleedEnd,
         /// DamagePhaseStart, DamagePhaseEnd, InstantMeterChange, MeterChangePhaseStart, MeterChangePhaseEnd
         /// </summary>
-        public abstract PrioityRank? Priority { get; set; }
+        public abstract PriorityRank? Priority { get; set; }
         /// <summary>
         /// If this event is going to apply a new change, or is it going to end the change it made?
         /// </summary>
@@ -47,20 +47,20 @@ namespace Meters
         public bool IsOrdinaryPriority()
         {
             if (Priority == null) return false;
-            if (Priority == PrioityRank.InstantMeterChange) return true;
+            if (Priority == PriorityRank.InstantMeterChange) return true;
 
             if (LifeCyclePhase == ApplyOrRemove.Apply)
             {
                 return Priority switch
                 {
-                    PrioityRank.PlayerBleedStart or PrioityRank.EnemyBleedStart or PrioityRank.DamagePhaseStart or PrioityRank.MeterChangePhaseStart => true,
+                    PriorityRank.PlayerBleedStart or PriorityRank.EnemyBleedStart or PriorityRank.DamagePhaseStart or PriorityRank.MeterChangePhaseStart => true,
                     _ => false,
                 };
             }
             //Otherwise, we're in remove
             return Priority switch
             {
-                PrioityRank.PlayerBleedEnd or PrioityRank.EnemyBleedEnd or PrioityRank.DamagePhaseEnd or PrioityRank.MeterChangePhaseEnd => true,
+                PriorityRank.PlayerBleedEnd or PriorityRank.EnemyBleedEnd or PriorityRank.DamagePhaseEnd or PriorityRank.MeterChangePhaseEnd => true,
                 _ => false,
             };
         }

@@ -53,8 +53,8 @@ namespace Timeline_Test
             Card<int,int> alpha = new(0, timeline);
             Card<int,int> beta = new(1, timeline);
             //Add all the other properties so if they were checked first, the test would fail.
-            alpha.Priority = PrioityRank.DebugHigh;
-            beta.Priority = PrioityRank.ReturnPlayerControl; //DebugLow might be removed in the future, so use a priority that won't be removed.
+            alpha.Priority = PriorityRank.DebugHigh;
+            beta.Priority = PriorityRank.ReturnPlayerControl; //DebugLow might be removed in the future, so use a priority that won't be removed.
             //Beta not having a face should make it sort first if Alpha has a face
             alpha.Face = 1;
             alpha.UUID = 1;
@@ -104,8 +104,8 @@ namespace Timeline_Test
             Timeline<int> timeline = new();
             Card<int,int> alpha = new(0, timeline);
             Card<int,int> beta = new(0, timeline);
-            alpha.Priority = PrioityRank.DebugHigh;
-            beta.Priority = PrioityRank.ReturnPlayerControl; //DebugLow might be removed in the future, so use a priority that won't be removed.
+            alpha.Priority = PriorityRank.DebugHigh;
+            beta.Priority = PriorityRank.ReturnPlayerControl; //DebugLow might be removed in the future, so use a priority that won't be removed.
             alpha.Face = 1; //Add a face to make sure that the priority is checked before the face.
             alpha.UUID = 1;
             beta.UUID = 0;
@@ -135,7 +135,7 @@ namespace Timeline_Test
             Timeline<int> timeline = new();
             Card<int,int> alpha = new(0, timeline);
             BaseCard<int> beta = new(0, timeline);
-            alpha.Priority = PrioityRank.DebugHigh;
+            alpha.Priority = PriorityRank.DebugHigh;
             //Set UUIDs so if priority is not used, the test will fail.
             alpha.UUID = 1;
             beta.UUID = 0;
@@ -148,7 +148,7 @@ namespace Timeline_Test
             Timeline<int> timeline = new();
             Card<int,int> alpha = new(0, timeline);
             BaseCard<int> beta = new(0, timeline);
-            alpha.Priority = PrioityRank.ReturnPlayerControl;
+            alpha.Priority = PriorityRank.ReturnPlayerControl;
             //Set UUIDs so if priority is not used, the test will fail.
             alpha.UUID = 0;
             beta.UUID = 1;

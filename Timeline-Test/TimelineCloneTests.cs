@@ -129,10 +129,10 @@ public class TimelineCloneTests
         Timeline<int> timeline = new();
         //Create cards, including ICombatCloneable and non-clonable (values)
         Card<int, double> valueCard = new(5, timeline) {Face = 3.0};
-        Card<int, double> valuePriority = new(6, timeline, PrioityRank.ReturnAIControl);
+        Card<int, double> valuePriority = new(6, timeline, PriorityRank.ReturnAIControl);
         Card<int, double> nullFaceValue = new(7, timeline) { HaltsInstantAction=true}; //ensure lower properties are cloned
         Card<int, ClonableClass> refCard = new(2, timeline) { Face = new("hi") };
-        Card<int, ClonableClass> nullRefCard = new(8, timeline,PrioityRank.InstantLoss);
+        Card<int, ClonableClass> nullRefCard = new(8, timeline,PriorityRank.InstantLoss);
 
         //Add all the cards
         timeline.AddEvent(valueCard);
@@ -549,8 +549,8 @@ public class TimelineCloneTests
     public void FailsIfPriorityDiffers()
     {
         var timeline = new Timeline<int>();
-        var card = new Card<int, double>(5, timeline, PrioityRank.None) { Face = 3.0 };
-        var clonedCard = new Card<int, double>(5, new Timeline<int>(), PrioityRank.ReturnAIControl) { Face = 3.0 };
+        var card = new Card<int, double>(5, timeline, PriorityRank.None) { Face = 3.0 };
+        var clonedCard = new Card<int, double>(5, new Timeline<int>(), PriorityRank.ReturnAIControl) { Face = 3.0 };
 
         Assert.Throws<Xunit.Sdk.EqualException>(() => CheckCards(card, clonedCard));
     }

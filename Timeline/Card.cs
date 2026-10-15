@@ -17,12 +17,12 @@ namespace Timeline
     /// <param name="timeToEvent">How far in the future this card is</param>
     /// <param name="owningTimeline">What timeline this Card should be owned by</param>
     /// <param name="priority">The priority of this card</param>
-    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PrioityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkPriority, IOkTiebreaker<T> where T : INumber<T>
+    public class Card<T,F>(T timeToEvent, Timeline<T> owningTimeline, PriorityRank? priority) : BaseCard<T>(timeToEvent, owningTimeline), IOkPriority, IOkTiebreaker<T> where T : INumber<T>
     {
         /// <summary>
         /// Priority of this card. If not present, treated as "None". Used as a tiebreaker for cards that occur at the same time. Lower numbers occur first. If this value is before "None", it will occur before any events without a priority. "None" and null are effectively the same, but prefer "None" to make it clear that the event was intentionally given no priority, rather than just forgetting to set a priority.
         /// </summary>
-        public PrioityRank? Priority { get; set; } = priority;
+        public PriorityRank? Priority { get; set; } = priority;
         /// <summary>
         /// Data store to contain arbitrary information, that can be used for tiebreaking if it supports comparison.
         /// </summary>

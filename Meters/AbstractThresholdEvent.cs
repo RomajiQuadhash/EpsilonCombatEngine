@@ -19,8 +19,8 @@ namespace Meters
         /// </summary>
         public abstract AbstractMeter<T,M> OwningMeter { get; }
         //Almost any priority could happen when a threshold is crossed, not just the ones that should always be from a threshold crossing.
-        //So, no need to restrict the priority to a specific set of values, just use the general PrioityRank enum.
-        public abstract PrioityRank? Priority { get; }
+        //So, no need to restrict the priority to a specific set of values, just use the general PriorityRank enum.
+        public abstract PriorityRank? Priority { get; }
         /// <summary>
         /// Note that if this event is never, this will throw an InvalidOperationException,
         /// since we'll construct a TransitionData object with invalid data.

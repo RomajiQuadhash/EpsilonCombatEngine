@@ -15,7 +15,7 @@ namespace Timeline.OkazoOptionalProperties
         /// The priority of this event, used as a tiebreaker for events that occur at the same time. Lower numbers occur first.
         /// If this value is before "None", it will occur before any events without a priority. "None" and null are effectively the same, but prefer "None" to make it clear that the event was intentionally given no priority, rather than just forgetting to set a priority.
         /// </summary>
-        public PrioityRank? Priority { get; }
+        public PriorityRank? Priority { get; }
         /// <summary>
         /// Compares the priorty of this event to another event that has a priority
         /// </summary>
@@ -23,8 +23,8 @@ namespace Timeline.OkazoOptionalProperties
         /// <returns>An integer that indicates the relative priority of the events. A positive value indicates this event has higher priority, a negative value indicates the other event has higher priority, and zero indicates equal priority.</returns>
         public int IsHigherPriorityThan(IOkPriority other)
         {
-            PrioityRank? thisPriority = this.Priority ?? PrioityRank.None;
-            PrioityRank? otherPriority = other.Priority ?? PrioityRank.None;
+            PriorityRank? thisPriority = this.Priority ?? PriorityRank.None;
+            PriorityRank? otherPriority = other.Priority ?? PriorityRank.None;
             // We want lower numbers to be higher priority, so we compare other to this, rather than the usual this to other.
             return otherPriority.Value.CompareTo(thisPriority.Value);
         }
@@ -38,14 +38,14 @@ namespace Timeline.OkazoOptionalProperties
             {
                 return 0;
             }
-            return PrioityRank.None.CompareTo(this.Priority.Value);
+            return PriorityRank.None.CompareTo(this.Priority.Value);
         }
     }
     /// <summary>
     /// List of event priorities. Lower numbers occur first. This is used as a tiebreaker for events that occur at the same time, that have priorities.
     /// If an event does not have a priority, it is considered to have priority "None".
     /// </summary>
-    public enum PrioityRank
+    public enum PriorityRank
     {
         DebugHigh,
         //Lose before win as winning shouldn't be allowed to make people survive when they shouldn't
