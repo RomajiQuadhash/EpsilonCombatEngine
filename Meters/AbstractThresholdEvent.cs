@@ -30,7 +30,7 @@ namespace Meters
         public abstract TransitionData<M> TransitionData { get; }
         /// <summary>
         /// Explicitly settable, since we might want to disable an event without removing it immediately
-        /// (it will be removed when the timline is cleaned (Open and PostEffect when TakeSteps is called)
+        /// (it will be removed when the timline is cleaned (Open and PostEffect when TakeSteps is called))
         /// </summary>
         public override bool CouldOccur { get; set; }
         /// <summary>
