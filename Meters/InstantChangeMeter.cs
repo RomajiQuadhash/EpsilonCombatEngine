@@ -34,12 +34,12 @@ namespace Meters
             _minValue=minValue;
             if (maxValue<=minValue)
             {
-                throw new InvalidOperationException($"The max value ({maxValue})must be strictly larger than the min value ({minValue})");
+                throw new ArgumentException($"The max value ({maxValue})must be strictly larger than the min value ({minValue})");
             }
             _maxValue =maxValue;
             if (maxValue<initialValue || minValue>initialValue)
             {
-                throw new InvalidOperationException($"Inital value ({initialValue}) is not in [{minValue},{maxValue}]. Invalid");
+                throw new ArgumentException($"Inital value ({initialValue}) is not in [{minValue},{maxValue}]. Invalid");
             }
             _currentValue =initialValue;
             _instantChange=M.Zero;
@@ -105,7 +105,7 @@ namespace Meters
         {
             if (newMin >= MaxValue)
             {
-                throw new InvalidOperationException($"New min {newMin} must be strictly less than the maximum ({MaxValue})");
+                throw new ArgumentException($"New min {newMin} must be strictly less than the maximum ({MaxValue})");
             }
             if (newMin <= CurrentValue)
             {
@@ -126,7 +126,7 @@ namespace Meters
         {
             if (newMax <= MinValue)
             {
-                throw new InvalidOperationException($"New max {newMax} must be strictly greater than the minimum ({MinValue})");
+                throw new ArgumentException($"New max {newMax} must be strictly greater than the minimum ({MinValue})");
             }
             if (newMax >= CurrentValue)
             {
