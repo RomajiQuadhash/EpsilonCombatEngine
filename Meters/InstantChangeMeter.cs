@@ -124,7 +124,7 @@ namespace Meters
         /// <param name="allowClamping">If newMin is more than the current value, can we push the value up to newMin?</param>
         /// <returns>True if we successfully changed the minimum to newMin</returns>
         /// <exception cref="ArgumentException">Minimum must be less than the maximum</exception>
-        public bool UpdateMin(M newMin, bool allowClamping)
+        public virtual bool UpdateMin(M newMin, bool allowClamping)
         {
             if (newMin >= MaxValue)
             {
@@ -151,7 +151,7 @@ namespace Meters
         /// <param name="allowClamping">If newMax is less than the current value, can we push the value down to newMax?</param>
         /// <returns>True if we successfully changed the maximum to newMax</returns>
         /// <exception cref="ArgumentException">Maximum must be greater than the minimum</exception>
-        public bool UpdateMax(M newMax, bool allowClamping)
+        public virtual bool UpdateMax(M newMax, bool allowClamping)
         {
             if (newMax <= MinValue)
             {
