@@ -20,7 +20,7 @@ namespace Meters
         public override Timeline<T> OwningTimeline { get; init; }
         public override M CurrentValue => _currentValue;
         /// <summary>
-        /// Always 0 since no contininous change will ever apply
+        /// Always 0 since no continuous change will ever apply
         /// </summary>
         public override M Derivative => M.Zero;
         public override T DerivativeDenominator => T.One;
@@ -39,7 +39,7 @@ namespace Meters
             _maxValue =maxValue;
             if (maxValue<initialValue || minValue>initialValue)
             {
-                throw new ArgumentException($"Inital value ({initialValue}) is not in [{minValue},{maxValue}]. Invalid");
+                throw new ArgumentException($"Initial value ({initialValue}) is not in [{minValue},{maxValue}]. Invalid");
             }
             _currentValue =initialValue;
             _instantChange=M.Zero;
