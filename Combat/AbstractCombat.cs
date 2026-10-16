@@ -51,7 +51,7 @@ namespace Combat
         /// <param name="combatant">What combatant us to be removed.</param>
         /// <returns>True if successfully removed</returns>
         public abstract bool RemoveCombatant(AbstractCombatant<T> combatant);
-        //Tagging out would be removing and registring,
+        //Tagging out would be removing and registering,
         //using the same UUID for the new combatant if anything going to the old combatant should instead go to the new one
         #endregion
         /// <summary>

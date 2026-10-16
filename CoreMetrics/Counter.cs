@@ -34,7 +34,7 @@ namespace CoreMetrics
             Value += RateOfChange * timeElapsed;
         }
         /// <summary>
-        /// Caluculates when the counter will cross a given threshold, returning a TimeOrNever indicating the time until crossing or that it will never cross.
+        /// Calculates when the counter will cross a given threshold, returning a TimeOrNever indicating the time until crossing or that it will never cross.
         /// Note that this can return a negative time if the is moving away from the threshold, even if the threshold was not previously crossed.
         /// </summary>
         /// <param name="threshold"></param>

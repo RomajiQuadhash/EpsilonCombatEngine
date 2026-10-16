@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace Timeline.OkazoOptionalProperties
 {
-    internal static class OkazoComparitor<T> where T : INumber<T>
+    internal static class OkazoComparator<T> where T : INumber<T>
     {
         /// <summary>
         /// Tiebreaker comparator for Okazo<T> that tries to use optional properties to compare consistently
-        /// Should make sure that x!=y and that they both are occuring at the time before calling this.
+        /// Should make sure that x!=y and that they both are occurring at the time before calling this.
         /// </summary>
         /// <param name="x">The first event to consider</param>
         /// <param name="y">The second event to consider</param>

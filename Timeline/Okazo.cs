@@ -10,7 +10,7 @@ using Timeline.OkazoOptionalProperties;
 namespace Timeline
 {
     /// <summary>
-    /// Used as an event, but in Esperato, since "event" is a reserved word.
+    /// Used as an event, but in Esperanto, since "event" is a reserved word.
     /// Comparison must sort by time remaining first, then by some other factor to ensure a deterministic order of events that occur at the same time. This is important to ensure that the timeline behaves predictably and that events are processed in a consistent order, even when they have the same time remaining.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
@@ -33,7 +33,7 @@ namespace Timeline
         /// </summary>
         public abstract bool HaltsInstantAction { get; set; }
         /// <summary>
-        /// Guarentee that there's at least one difference between two events
+        /// Guarantee that there's at least one difference between two events
         /// </summary>
         public abstract int UUID { get; set; }
 
@@ -41,7 +41,7 @@ namespace Timeline
         /// Compares the current instance with another Okazo<T> object and returns an integer that indicates their
         /// relative order based on time remaining and a tiebreaker.
         /// </summary>
-        /// <remarks>The comparison first considers the TimeRemaining property. If the values are equal, then checks if the events are the same. If not, goes to the comparitor.
+        /// <remarks>The comparison first considers the TimeRemaining property. If the values are equal, then checks if the events are the same. If not, goes to the comparator.
         /// </remarks>
         /// <param name="other">The Okazo<T> instance to compare with the current object. Cannot be null.</param>
         /// <returns>A value less than zero if the current instance should occur before the other; zero if they are equal;
@@ -58,7 +58,7 @@ namespace Timeline
             {
                 return 0;
             }
-           return OkazoComparitor<T>.Compare(this, other);
+           return OkazoComparator<T>.Compare(this, other);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Timeline
         /// </summary>
         public event Occur<T>? Occurring;
         /// <summary>
-        /// does Occuring.Invoke. Needed to raise it up higher
+        /// does Occurring.Invoke. Needed to raise it up higher
         /// </summary>
         protected void InvokeOccurring()
         {
@@ -114,7 +114,7 @@ namespace Timeline
                 throw new UnrecoverableCloneException(
                     $"Rewire called on {GetType().Name} ({this}) that has no clone registered.");
             }
-            //Ensure we always relink Occuring
+            //Ensure we always relink Occurring
             RewireOccurring(context, clone);
             //Allow extensibility for subclasses.
             RewireOthers(context, clone);
@@ -157,11 +157,11 @@ namespace Timeline
         }
 
         /// <summary>
-        /// Gets all the objects looking at Occuring.
+        /// Gets all the objects looking at Occurring.
         /// If you're not a unit test or debug menu, you shouldn't be calling this.
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException">Thrown if a static method is subscribed to Occuring (which would fail when cloned)</exception>
+        /// <exception cref="InvalidOperationException">Thrown if a static method is subscribed to Occurring (which would fail when cloned)</exception>
         public IReadOnlyList<object> GetOccurringSubscribers()
         {
             if (Occurring is null) return [];
@@ -171,7 +171,7 @@ namespace Timeline
                 if (d.Target is not null) result.Add(d.Target);
                 else
                 {
-                    throw new InvalidOperationException($"Static method {d.Method} is subscribed to Occuring, which is not supported.");
+                    throw new InvalidOperationException($"Static method {d.Method} is subscribed to Occurring, which is not supported.");
                 }
             }
             return result;

@@ -53,7 +53,7 @@ namespace Timeline
             } }
 
         /// <summary>
-        /// Guarentee that there's at least one difference between two events.
+        /// Guarantee that there's at least one difference between two events.
         /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
         /// </summary>
         public override int UUID { get; set; } = Guid.NewGuid().GetHashCode();
@@ -101,7 +101,7 @@ namespace Timeline
             TimeRemaining = new(TimeRemaining.Time - e);
         }
         /// <summary>
-        /// If possible, invoke the Occuring event and remove this from the timeline's advance event.
+        /// If possible, invoke the Occurring event and remove this from the timeline's advance event.
         /// </summary>
         /// <exception cref="InvalidOperationException">If the time isn't zero, then can't trigger</exception>
         public override void Trigger()

@@ -54,10 +54,10 @@ public class TimelineBasicTests
         Assert.True(timeline.RemoveEvent(card));
         Assert.DoesNotContain(card, timeline.Events);
         Assert.DoesNotContain(card, timeline.PossibleEvents);
-        PassiveDynamicEvent<int> nonOccuringEvent = new(false, timeline);
-        Assert.True(timeline.RemoveEvent(nonOccuringEvent));
-        Assert.DoesNotContain(nonOccuringEvent, timeline.Events);
-        Assert.DoesNotContain(nonOccuringEvent, timeline.PossibleEvents);
+        PassiveDynamicEvent<int> nonOccurringEvent = new(false, timeline);
+        Assert.True(timeline.RemoveEvent(nonOccurringEvent));
+        Assert.DoesNotContain(nonOccurringEvent, timeline.Events);
+        Assert.DoesNotContain(nonOccurringEvent, timeline.PossibleEvents);
     }
     [Fact(DisplayName = "Removing an event that isn't in either Events or PossibleEvents returns false")]
     public void Test5() { 

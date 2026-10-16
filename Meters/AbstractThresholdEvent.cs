@@ -8,7 +8,7 @@ namespace Meters
     /// <summary>
     /// An abstract placeholder for events that are triggered by crossing a threshold.
     /// Examples might be hitting the top or bottom of the range (like a KO, death, or max health/MP)
-    /// or crossing a specific threshold (like getting a vibe meter to sufficently rage/focus to perform an action).
+    /// or crossing a specific threshold (like getting a vibe meter to sufficiently rage/focus to perform an action).
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     /// <typeparam name="M">The numeric type used for the metric</typeparam>
@@ -24,13 +24,13 @@ namespace Meters
         /// <summary>
         /// Note that if this event is never, this will throw an InvalidOperationException,
         /// since we'll construct a TransitionData object with invalid data.
-        /// This is OK because a never event will never end up in OkazoComparitor.Compare
+        /// This is OK because a never event will never end up in OkazoComparator.Compare
         /// </summary>
         /// <remarks>TODO: consider if we can just, implement this</remarks>
         public abstract TransitionData<M> TransitionData { get; }
         /// <summary>
         /// Explicitly settable, since we might want to disable an event without removing it immediately
-        /// (it will be removed when the timline is cleaned (Open and PostEffect when TakeSteps is called))
+        /// (it will be removed when the timeline is cleaned (Open and PostEffect when TakeSteps is called))
         /// </summary>
         public override bool CouldOccur { get; set; }
         /// <summary>

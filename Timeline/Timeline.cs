@@ -73,7 +73,7 @@ namespace Timeline
         /// </summary>
         /// <param name="reason">Why the timeline was terminated. Obviously, can't be "not terminated"</param>
         /// <exception cref="InvalidPhaseForActionException">Can't re-terminate execution.</exception>
-        /// <exception cref="ArgumentException">If you try to haver NotTerminated as a termination reason, enjoy your prize</exception>
+        /// <exception cref="ArgumentException">If you try to have NotTerminated as a termination reason, enjoy your prize</exception>
         public void Terminate(TerminationType reason)
         {
             if (Phase == TimelinePhase.Terminated)
@@ -94,7 +94,7 @@ namespace Timeline
         /// You should use this method for any event that is being added during the Open phase, since it will put the event in the correct list based on its time remaining. 
         /// If you're adding an event during the InstantAction phase, you must use AddPossibleEvent instead, since events added during the InstantAction phase since only PossibleEvents can be run or modified then.
         /// </summary>
-        /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
+        /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not necessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
         public void AddEvent(Okazo<T> e)
         {
@@ -114,7 +114,7 @@ namespace Timeline
         /// *An InstantAction event that is being added during the InstantAction phase. 
         /// If you're adding an event during the Open phase,you should probably use AddEvent instead, since it will put the event in the correct list based on its time remaining.
         /// </summary>
-        /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not neccessarily always a bug, but should be avoided.</remarks>
+        /// <remarks>Try not to add events with negative time remaining since this causes the timeline to back up. Not necessarily always a bug, but should be avoided.</remarks>
         /// <param name="e"></param>
         public void AddPossibleEvent(Okazo<T> e)
         {
@@ -338,7 +338,7 @@ namespace Timeline
         /// </summary>
         /// <remarks>Does basic validation on the way. If these are tripped, something is bad</remarks>
         /// <returns>A list of objects </returns>
-        /// <exception cref="InvalidOperationException">If you aren't subscribing with an IAdvancable object or are subscribing with a static item, this is thrown.</exception>
+        /// <exception cref="InvalidOperationException">If you aren't subscribing with an IAdvanceable object or are subscribing with a static item, this is thrown.</exception>
         public IReadOnlyList<IAdvanceable<T>> GetAdvanceSubscribers()
         {
             if (Advance is null) return [];
@@ -377,7 +377,7 @@ namespace Timeline
         //These methods help with that
         /// <summary>
         /// Simulates the events of the Purge phase on a list of events and set of possible events.
-        /// Actually called by Purge, so behavior guarenteed to be identical
+        /// Actually called by Purge, so behavior guarantied to be identical
         /// </summary>
         /// <remarks>Useful to use when displaying from the StepReport, to see what the clean timeline "would be"</remarks>
         /// <param name="events">List of events that should be considered the timeline</param>

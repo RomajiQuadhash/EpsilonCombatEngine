@@ -35,7 +35,7 @@ namespace Timeline
         public Timeline<T> OwningTimeline { get; }
 
         /// <summary>
-        /// Guarentee that there's at least one difference between two cards
+        /// Guarantee that there's at least one difference between two cards
         /// UNLESS YOU'RE A UNIT TEST, NEVER SET THIS
         /// </summary>
         public override int UUID { get; set; } = Guid.NewGuid().GetHashCode();
@@ -58,8 +58,8 @@ namespace Timeline
         }
 
         /// <summary>
-        /// Used to mark that this event is occuring. Should only be called by the timeline, 
-        /// and only when TimeToEvent is zero, since otherwise the event shouldn't be occuring yet.
+        /// Used to mark that this event is occurring. Should only be called by the timeline, 
+        /// and only when TimeToEvent is zero, since otherwise the event shouldn't be occurring yet.
         /// </summary>
         /// <remarks>Please don't override this method. Cards are only supposed to notify their listeners, not actually do anything else.
         /// </remarks>

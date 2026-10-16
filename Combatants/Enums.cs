@@ -6,7 +6,7 @@
     public enum MeterTypes
     {
         Mana, //possibly player only?
-        Shield, //This meter determines if the shield stat should be applied along with defense. Any DOT should subtract from this value when it starts, then return to the prior level after the DOT ends "gradually" (definine a constant for how long the heal should take). If the value is at 0, then you can break the shield and set the min to "negative infinity" and just do the rest normally. Once the HP climbs back above 0, set the minimum back to 0 and the break ends. This should exist on all but test combatants probably
+        Shield, //This meter determines if the shield stat should be applied along with defense. Any DOT should subtract from this value when it starts, then return to the prior level after the DOT ends "gradually" (define a constant for how long the heal should take). If the value is at 0, then you can break the shield and set the min to "negative infinity" and just do the rest normally. Once the HP climbs back above 0, set the minimum back to 0 and the break ends. This should exist on all but test combatants probably
         IncomingDamage, //Might not be needed but it could be useful to split this off from Health, to make health a simpler meter and just use stat/shield changes and this to change the HP drain. Or maybe this will be merged into the HP meter, possibly with shield
 
         //Player Only

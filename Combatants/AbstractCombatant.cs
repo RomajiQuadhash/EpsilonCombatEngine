@@ -103,7 +103,7 @@ namespace Combatants
         /// <summary>
         /// How fast the combatant is. Note that not all elements of the events this combatant takes will be based on Speed,
         /// but higher Speed should generally reduce the time spent waiting between taking meaningful actions (windup, recovery, etc.).
-        /// Speed is only reletave to other combatants' speeds, so if you get faster and you're already the fastest,
+        /// Speed is only relative to other combatants' speeds, so if you get faster and you're already the fastest,
         /// it will slow others down rather than make you faster.
         /// </summary>
         /// <remarks>Uses the timeline's numerical unit since that should be the "most precise" unit and common to all.</remarks>
