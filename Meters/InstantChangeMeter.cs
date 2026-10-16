@@ -13,7 +13,7 @@ namespace Meters
     public class InstantChangeMeter<T, M> : AbstractMeter<T,M> where T : INumber<T> where M : INumber<M>
     {
 
-        private M _currentValue;
+        protected M _currentValue;
         private M _minValue;
         private M _maxValue;
         private M _instantChange;
