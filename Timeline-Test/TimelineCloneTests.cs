@@ -127,12 +127,12 @@ public class TimelineCloneTests
     public void CardCloning()
     {
         Timeline<int> timeline = new();
-        //Create cards, including ICombatCloneable and non-clonable (values)
+        //Create cards, including ICombatCloneable and non-cloneable (values)
         Card<int, double> valueCard = new(5, timeline) {Face = 3.0};
         Card<int, double> valuePriority = new(6, timeline, PriorityRank.ReturnAIControl);
         Card<int, double> nullFaceValue = new(7, timeline) { HaltsInstantAction=true}; //ensure lower properties are cloned
-        Card<int, ClonableClass> refCard = new(2, timeline) { Face = new("hi") };
-        Card<int, ClonableClass> nullRefCard = new(8, timeline,PriorityRank.InstantLoss);
+        Card<int, CloneableClass> refCard = new(2, timeline) { Face = new("hi") };
+        Card<int, CloneableClass> nullRefCard = new(8, timeline,PriorityRank.InstantLoss);
 
         //Add all the cards
         timeline.AddEvent(valueCard);
@@ -168,12 +168,12 @@ public class TimelineCloneTests
             CheckCards(valueCard, (Card<int, double>)timelineClone.Events[0]);
             CheckCards(valuePriority, (Card<int, double>)timelineClone.Events[1]);
             CheckCards(nullFaceValue, (Card<int, double>)timelineClone.Events[2]);
-            CheckCards(refCard, (Card<int, ClonableClass>)timelineClone.Events[3]); //Since this one got cloned, check it on its own
-            CheckCards(nullRefCard, (Card<int, ClonableClass>)timelineClone.Events[4]);
+            CheckCards(refCard, (Card<int, CloneableClass>)timelineClone.Events[3]); //Since this one got cloned, check it on its own
+            CheckCards(nullRefCard, (Card<int, CloneableClass>)timelineClone.Events[4]);
 
             //Check that the one reference got cloned correctly
             Assert.True(context.TryGet(refCard.Face, out var clonedFace));
-            Assert.Same(clonedFace, ((Card<int, ClonableClass>)timelineClone.Events[3]).Face);
+            Assert.Same(clonedFace, ((Card<int, CloneableClass>)timelineClone.Events[3]).Face);
             Assert.NotSame(refCard.Face, clonedFace);
             Assert.Equal(refCard.Face.Value, clonedFace.Value);
         }
@@ -379,22 +379,22 @@ public class TimelineCloneTests
     /// A class that is possible to clone that is as simple as possible
     /// </summary>
     /// <param name="startingValue"></param>
-    private class ClonableClass(string startingValue) : ICombatCloneable
+    private class CloneableClass(string startingValue) : ICombatCloneable
     {
         public string Value { get; set; } = startingValue;
         public object Clone(CloneContext context)
         {
-            if (context.TryGet(this,out ClonableClass existingClone))
+            if (context.TryGet(this,out CloneableClass existingClone))
             {
                 return existingClone;
             }
-            ClonableClass clone = new(Value);
+            CloneableClass clone = new(Value);
             context.Register(this, clone);
             return clone;
         }
     }
     /// <summary>
-    /// Ensures that a cloned card has all the mutable properties of the orignal *
+    /// Ensures that a cloned card has all the mutable properties of the original
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <typeparam name="F"></typeparam>
@@ -567,11 +567,11 @@ public class TimelineCloneTests
 
     //Human test(s). You can tell because I prefer type name =new instead of var name = new type
     [Fact(DisplayName ="If the face is ICombatCloneable, it doesn't check the faces")]
-    public void FaceDifferenceOfClonableFaceIgnored()
+    public void FaceDifferenceOfCloneableFaceIgnored()
     {
         Timeline<int> timeline = new();
-        Card<int, ClonableClass> card = new(5, timeline) { Face = new("hi") };
-        Card<int, ClonableClass> cloneCard = new(5, new Timeline<int>()) { Face = new("bye")};
+        Card<int, CloneableClass> card = new(5, timeline) { Face = new("hi") };
+        Card<int, CloneableClass> cloneCard = new(5, new Timeline<int>()) { Face = new("bye")};
 
         CheckCards(card, cloneCard); //Shouldn't throw
     }

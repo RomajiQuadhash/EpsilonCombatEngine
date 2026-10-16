@@ -17,7 +17,7 @@ namespace Timeline.OkazoOptionalProperties
         /// </summary>
         public PriorityRank? Priority { get; }
         /// <summary>
-        /// Compares the priorty of this event to another event that has a priority
+        /// Compares the priority of this event to another event that has a priority
         /// </summary>
         /// <param name="other">Another event with a priority to compare against</param>
         /// <returns>An integer that indicates the relative priority of the events. A positive value indicates this event has higher priority, a negative value indicates the other event has higher priority, and zero indicates equal priority.</returns>
@@ -55,7 +55,7 @@ namespace Timeline.OkazoOptionalProperties
         PlayerDeath,
         PlayerBleedStart, // If a player starts bleeding, their min HP should be set to negative, before being capped at 0 and normal KOed
         PlayerKO,
-        PlayerRes, //Restoring a player from KO should prevent an AllPlayerKO loss, so it should occur before. After KO since a player can't be restored until they're KOed, and it would be annoying for a player to fail to restore (since restore only works on KOed players), then immedietly be KOed.
+        PlayerRes, //Restoring a player from KO should prevent an AllPlayerKO loss, so it should occur before. After KO since a player can't be restored until they're KOed, and it would be annoying for a player to fail to restore (since restore only works on KOed players), then immediately be KOed.
         AllPlayerKO, //Wait to make sure all players are KOed before losing due to player KO. Any death is a loss, so no need for an AllPlayerDeath
         
         //Special exit conditions that aren't a win or a loss.
@@ -68,7 +68,7 @@ namespace Timeline.OkazoOptionalProperties
         EnemyDeath,
         EnemyBleedStart,
         EnemyKO,
-        EnemySpawn, //If an enemy spawns, that should occcur before a "no enemies remain" victory
+        EnemySpawn, //If an enemy spawns, that should occur before a "no enemies remain" victory
         NoEnemiesRemain,
 
         //Damage should occur after death/KO, since a dead/KOed person shouldn't deal damage
