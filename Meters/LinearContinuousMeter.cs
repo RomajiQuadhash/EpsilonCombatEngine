@@ -9,6 +9,15 @@ using System.Threading.Tasks;
 using Timeline;
 namespace Meters
 {
+    /// <summary>
+    /// Meter that supports continuous changes to values instead of just jumps. Starts with change over time of 0
+    /// </summary>
+    /// <typeparam name="T">Time unit of the timeline</typeparam>
+    /// <typeparam name="M">Time unit of this meter's value. Assumed to be at least as precise as T</typeparam>
+    /// <param name="timeline">The timeline that owns this meter</param>
+    /// <param name="initialValue">The value that the meter starts at</param>
+    /// <param name="minValue">Minimum of the meter</param>
+    /// <param name="maxValue">Maximum of the meter</param>
     public class LinearContinuousMeter<T, M>(Timeline<T> timeline, M initialValue, M minValue, M maxValue) : InstantChangeMeter<T, M>(timeline, initialValue, minValue, maxValue) where T : INumber<T> where M : INumber<M>
     {
         protected M _derivative = M.Zero;
@@ -96,6 +105,10 @@ namespace Meters
             clone.UUID = UUID;
             clone.SetDerivative(Derivative);
             return clone;
+        }
+        public override string ToString()
+        {
+            return base.ToString()+$" and derivative {Derivative}";
         }
         #endregion
         #region Mutators
