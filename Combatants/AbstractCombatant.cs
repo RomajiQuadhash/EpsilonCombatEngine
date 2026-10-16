@@ -82,13 +82,13 @@ namespace Combatants
         /// </summary>
         public abstract IDictionary<MeterTypes,IMeter<T>> AdditionalMeters { get; set; }
         /// <summary>
-        /// Stores the stats that can be modified and what the current stages are. (+1 is double, +2 triple, -1 half, -2 third)
+        /// Stores the stats including their modifications, except speed (since everyone needs it and it has special properties)
         /// </summary>
-        public abstract IDictionary<CombatStats,AbstractMeter<T,Rational<long>>> StatChangeStages {  get; set; }
+        public abstract IDictionary<CombatStats,StatModificationMeter<T>> ChangeableStats {  get; set; }
         #endregion
 
         #region Pace, Speed, and Turns
-        //"Pace" is a general term for properties about when a combatant can act.
+        //"Pace" is the imagined amount of real time each Delta takes. The pace gets faster if the fastest combatant gets faster
         //Speed is a specific property used in relation to other combatants' speeds to determine when they can act.
         //Turns are when a combatant can make a decision about what to do next and is loosely based on their speed but also,
         //what actions they last took.
@@ -106,18 +106,8 @@ namespace Combatants
         /// Speed is only relative to other combatants' speeds, so if you get faster and you're already the fastest,
         /// it will slow others down rather than make you faster.
         /// </summary>
-        /// <remarks>Uses the timeline's numerical unit since that should be the "most precise" unit and common to all.</remarks>
-        public abstract T Speed { get; }
-        /// <summary>
-        /// Should be a meter set based on the max speed of the combat, the min-delay of the next action, and the combatant's speed.
-        /// Should be such that when the meter reaches its max, the combatant's next action can occur.
-        /// </summary>
-        /// <remarks>Note that this can be null. If it is, then a meter isn't involved in when going next will happen</remarks>
-        public abstract AbstractMeter<T, T>? DelayBar { get; }
-        /// <summary>
-        /// The event that should run next once the DelayBar finishes. Null when the delay bar isn't in use.
-        /// </summary>
-        public abstract AbstractThresholdEvent<T,T>? UponDelayCompletion {  get; }
+        public abstract SpeedMeter<T> Speed { get; }
+        //Since delays are set at the start of the delay, no need for any structures to dynamically adjust delays 
         #endregion
         #region Deligates Handler
         /// <summary>
