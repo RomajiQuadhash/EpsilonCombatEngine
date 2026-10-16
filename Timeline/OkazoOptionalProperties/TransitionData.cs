@@ -77,7 +77,7 @@ namespace Timeline.OkazoOptionalProperties
             }
             if (after<threshold) //Note that instantChange is guaranteed to be positive here and in the same direction as the overall change, which is why we can just check if after<threshold to see if it crossed the threshold.
             {
-                throw new InvalidOperationException("After value didn't cross the threshold");
+                throw new ArgumentException("After value didn't cross the threshold");
             }
             After = (after-threshold);
             Before = After-(instantChange);
