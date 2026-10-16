@@ -10,6 +10,11 @@ using Timeline;
 
 namespace Meters
 {
+    /// <summary>
+    /// Simple meter that supports only instantaneous changes.
+    /// </summary>
+    /// <typeparam name="T">Time unit of the timeline</typeparam>
+    /// <typeparam name="M">Time unit of this meter's value</typeparam>
     public class InstantChangeMeter<T, M> : AbstractMeter<T,M> where T : INumber<T> where M : INumber<M>
     {
 
@@ -27,7 +32,14 @@ namespace Meters
         public override M InstantChange => _instantChange;
         public override M MinValue => _minValue;
         public override M MaxValue => _maxValue;
-
+        /// <summary>
+        /// Creates an InstantChangeMeter with InstantChange at 0 and the rest as set
+        /// </summary>
+        /// <param name="timeline">The timeline that owns this meter</param>
+        /// <param name="initialValue">The value that the meter starts at</param>
+        /// <param name="minValue">Minimum of the meter</param>
+        /// <param name="maxValue">Maximum of the meter</param>
+        /// <exception cref="ArgumentException">minValue<=initialValue<=maxValue and minValue!=maxValue. If you violate this, enjoy your prize</exception>
         public InstantChangeMeter(Timeline<T> timeline, M initialValue,  M minValue, M maxValue)
         {
             OwningTimeline=timeline;
@@ -99,8 +111,19 @@ namespace Meters
             clone.UUID = UUID;
             return clone;
         }
+        public override string ToString()
+        {
+            return $"{GetType()} with range [{MinValue},{MaxValue}] and current value {CurrentValue}";
+        }
         #endregion
         #region Mutators
+        /// <summary>
+        /// Changes the meter minimum
+        /// </summary>
+        /// <param name="newMin">Target minimum</param>
+        /// <param name="allowClamping">If newMin is more than the current value, can we push the value up to newMin?</param>
+        /// <returns>True if we successfully changed the minimum to newMin</returns>
+        /// <exception cref="ArgumentException">Minimum must be less than the maximum</exception>
         public bool UpdateMin(M newMin, bool allowClamping)
         {
             if (newMin >= MaxValue)
@@ -121,7 +144,13 @@ namespace Meters
             //We'd have to clamp and we're not allowed to, just return false
             return false;
         }
-
+        /// <summary>
+        /// Changes the meter maximum
+        /// </summary>
+        /// <param name="newMax">Target maximum</param>
+        /// <param name="allowClamping">If newMax is less than the current value, can we push the value down to newMax?</param>
+        /// <returns>True if we successfully changed the maximum to newMax</returns>
+        /// <exception cref="ArgumentException">Maximum must be greater than the minimum</exception>
         public bool UpdateMax(M newMax, bool allowClamping)
         {
             if (newMax <= MinValue)
