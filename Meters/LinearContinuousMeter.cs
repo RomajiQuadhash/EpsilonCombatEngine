@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Timeline;
 namespace Meters
 {
-    public class LinearContinousMeter<T, M>(Timeline<T> timeline, M initialValue, M minValue, M maxValue) : InstantChangeMeter<T, M>(timeline, initialValue, minValue, maxValue) where T : INumber<T> where M : INumber<M>
+    public class LinearContinuousMeter<T, M>(Timeline<T> timeline, M initialValue, M minValue, M maxValue) : InstantChangeMeter<T, M>(timeline, initialValue, minValue, maxValue) where T : INumber<T> where M : INumber<M>
     {
         protected M _derivative = M.Zero;
         /// <summary>
@@ -18,7 +18,7 @@ namespace Meters
         public override M Derivative => _derivative;
         #region Function Overrides
         /// <summary>
-        /// Moves the meter accoring to the derivative. Also zeros out instant change
+        /// Moves the meter according to the derivative. Also zeros out instant change
         /// </summary>
         /// <param name="sender">Must be the owning timeline</param>
         /// <param name="timeElapsed">How much time to move forward by.</param>
@@ -53,21 +53,21 @@ namespace Meters
             {
                 return new TimeOrNever<T>(false);
             }
-            M divisonResult = distanceToMake / Derivative;
-            if (!M.IsFinite(divisonResult)) //Likely will be short circuited since Derivative isn't 0, but good to be sure
+            M divisionResult = distanceToMake / Derivative;
+            if (!M.IsFinite(divisionResult)) //Likely will be short circuited since Derivative isn't 0, but good to be sure
             {
                 return new TimeOrNever<T>(true);
             }
-            if (M.IsPositive(divisonResult) || allowNegative)
+            if (M.IsPositive(divisionResult) || allowNegative)
             {
-                return new TimeOrNever<T>(T.CreateTruncating(divisonResult));
+                return new TimeOrNever<T>(T.CreateTruncating(divisionResult));
             }
             //Otherwise we're negative and negatives are not allowed
             return new TimeOrNever<T>(true);
         }
         /// <summary>
         /// The same as ThresholdTouch, but returns never if we are at the threshold and not moving.
-        /// It also counts if we jumped over the thresholf instantly
+        /// It also counts if we jumped over the threshold instantly
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to pass</param>
         /// <param name="allowNegative">If true, will return a value in the past if the derivative is in the other direction from the target</param>
@@ -88,7 +88,7 @@ namespace Meters
             {
                 throw new UnrecoverableCloneException("Owning timeline must be cloned before cloning any meters.");
             }
-            LinearContinousMeter<T,M> clone = new(owningTimelineClone, CurrentValue-InstantChange,MinValue,MaxValue);
+            LinearContinuousMeter<T,M> clone = new(owningTimelineClone, CurrentValue-InstantChange,MinValue,MaxValue);
             context.Register(this, clone);
 
             //Now update this to match
@@ -110,7 +110,7 @@ namespace Meters
             return true;
         }
         /// <summary>
-        /// Adds a change to the derivativative. Use this more than setting it.
+        /// Adds a change to the derivativities. Use this more than setting it.
         /// </summary>
         /// <param name="changeOfDerivative">Amount to add to the</param>
         /// <returns></returns>
