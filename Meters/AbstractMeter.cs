@@ -68,25 +68,27 @@ namespace Meters
         /// </summary>
         public M Range => MaxValue - MinValue;
         public abstract void OnAdvance(object? sender, T timeElapsed); //For a simple meter, this is really simple.
-        //But, I'm not going to bake that in at this stage, given I'm not coding anything at this stage
 
         /// <summary>
         /// Returns, given current properties, the time at which the meter will touch the specified threshold.
         /// Note that this is a prediction based on current properties.
-        /// If M is a discrete type, this is the earliest time at which the meter will be equal to the threshold.
+        /// If M is a discrete type, this is the first time at which the meter is at or past the threshold
+        /// in the direction of movement, i.e., the first tick whose value reaches or crosses the threshold,
+        /// not necessarily a tick whose value equals it exactly
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to reach</param>
-        /// <param name="allowNegative">If true, will return the earliest even if it is in the past. If false, if the only transition(s) are in the past, will return Never. Otherwise, the first one at or equal to time 0</param>
+        /// <param name="allowNegative">If true, will return the first (without ticking again) even if it is in the past. 
+        /// If false, if the only transition(s) are in the past, will return Never. Otherwise, the first one at or equal to time 0</param>
         /// <returns>The time at which the meter will touch the threshold or Never if it won't. 0 if already there</returns>
         public abstract TimeOrNever<T> ThresholdTouch(M threshold,bool allowNegative);
         /// <summary>
         /// Almost the same as ThresholdTouch, but with a few differences:
         /// 1. If the meter isn't moving, it will return Never instead of 0 if the meter is already at the threshold.
-        /// 2. If M is a discrete type, this is the latest time at which the meter will be equal to the threshold, rather than the earliest.
+        /// 2. If M is a discrete type and a tick lands exactly on the threshold, it will be the next tick
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to pass</param>
         /// <param name="allowNegative">If true, will return the earliest even if it is in the past. If false, if the only transition(s) are in the past, will return Never. Otherwise, the first one at or equal to time 0</param>
-        /// <returns>The time at which the meter will cross the threshold or Never if it won't. 0 if already there and the threshold is moving</returns>
+        /// <returns>The time at which the meter will cross the threshold or Never if it won't. 0 if already there and the meter is moving (or next tick if discrete)</returns>
         public abstract TimeOrNever<T> ThresholdCross(M threshold, bool allowNegative);
         /// <summary>
         /// Did the Instant Change move it past this threshold?
