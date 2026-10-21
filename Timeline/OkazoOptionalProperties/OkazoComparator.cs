@@ -45,7 +45,25 @@ namespace Timeline.OkazoOptionalProperties
                 //Since we don't know the type at compile time, we have to use dynamic to call CompareTo.
                 dynamic xOk = x;
                 dynamic yOk = y;
-                ret = xOk.TransitionData.CompareTo(yOk.TransitionData);
+                if (xOk.TransitionData is null)
+                {
+                    if (yOk.TransitionData is not null)
+                    {
+                        ret = -1; //Y has more information than X, should come first
+                    }
+                }
+                else
+                {
+                    if (yOk.TransitionData is not null)
+                    {
+                        ret = xOk.TransitionData.CompareTo(yOk.TransitionData);
+                    }
+                    else
+                    {
+                        ret = 1; //X has more information than Y, should come first
+                    }
+                }
+                
                 if (ret != 0) return ret;
             }
             //Put new properties here.

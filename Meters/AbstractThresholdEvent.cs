@@ -22,12 +22,9 @@ namespace Meters
         //So, no need to restrict the priority to a specific set of values, just use the general PriorityRank enum.
         public abstract PriorityRank? Priority { get; }
         /// <summary>
-        /// Note that if this event is never, this will throw an InvalidOperationException,
-        /// since we'll construct a TransitionData object with invalid data.
-        /// This is OK because a never event will never end up in OkazoComparator.Compare
+        /// Note that if this is never, this will be never. If it hasn't actually happened yet, it might be inaccurate
         /// </summary>
-        /// <remarks>TODO: consider if we can just, implement this</remarks>
-        public abstract TransitionData<M> TransitionData { get; }
+        public abstract TransitionData<M>? TransitionData { get; }
         /// <summary>
         /// Explicitly settable, since we might want to disable an event without removing it immediately
         /// (it will be removed when the timeline is cleaned (Open and PostEffect when TakeSteps is called))
