@@ -13,6 +13,9 @@ namespace Timeline.OkazoOptionalProperties
     /// </summary>
     public interface IOkTransition<T> where T : INumber<T>
     {
-        public TransitionData<T> TransitionData { get; }
+        /// <summary>
+        /// If this event has crossed the line, this has the data
+        /// </summary>
+        public TransitionData<T>? TransitionData { get; }
     }
 }
