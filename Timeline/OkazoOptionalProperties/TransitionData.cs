@@ -48,8 +48,7 @@ namespace Timeline.OkazoOptionalProperties
         /// <param name="progressiveChange">The progressive change at the time of crossing the threshold</param>
         /// <param name="range">The range of the meter</param>
         /// <param name="threshold">The threshold value</param>
-        /// <exception cref="ArgumentException">If the range is less than or equal to zero</exception>
-        /// <exception cref="InvalidOperationException">If the after value didn't cross or reach the threshold</exception>
+        /// <exception cref="ArgumentException">If the range is less than or equal to zero or if the after value didn't cross or reach the threshold</exception>
         public TransitionData(T instantChange, T after, T progressiveChange,T range,T threshold)
         {
             if (range <= T.Zero)
