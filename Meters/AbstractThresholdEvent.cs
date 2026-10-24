@@ -46,6 +46,6 @@ namespace Meters
         /// Well, which one is correct might depend of what the purpose of the threshold is, but there's another difficulty.
         /// We might want to call them with allowNegative=true sometimes, but usually with it false.
         /// </remarks>
-        internal abstract TimeOrNever<T> ComputeTimeRemaining();
+        protected abstract TimeOrNever<T> ComputeTimeRemaining();
     }
 }
