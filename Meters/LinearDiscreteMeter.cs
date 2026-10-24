@@ -40,6 +40,7 @@ namespace Meters
             {
                 return;
             }
+            M oldValue = CurrentValue;
             T nextTimeSinceLastIncrement = TimeSinceLastIncrement + timeElapsed;
 
             // Floor division and positive modulo:
@@ -53,6 +54,7 @@ namespace Meters
 
             M numberOfIncrements = M.CreateTruncating(floorQuotient);
             _currentValue = M.Clamp(_currentValue + Derivative * numberOfIncrements, MinValue, MaxValue);
+            RaiseContinuousChangeEvt(timeElapsed, oldValue, CurrentValue);
         }
         /// <summary>
         /// Returns, given current properties, the time at which the meter will touch the specified threshold.
