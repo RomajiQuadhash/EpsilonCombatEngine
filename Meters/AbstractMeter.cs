@@ -16,7 +16,7 @@ namespace Meters
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     /// <typeparam name="M">The numeric type used for the metric</typeparam>
-    public abstract class AbstractMeter<T, M> : IAdvanceable<T>,IMeter<T>,ICombatCloneable, IEquatable<AbstractMeter<T,M>> where T : INumber<T> where M : INumber<M>
+    public abstract class AbstractMeter<T, M> : IAdvanceable<T>, IMeter<T>, ICombatCloneable, IEquatable<AbstractMeter<T,M>> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>
         /// The timeline this meter belongs to. Should NEVER change, since a timeline should exist for the entire lifetime of a battle,
@@ -111,7 +111,43 @@ namespace Meters
             return thresholdComparison < 0; //One of before or after is on the other side of the other
         }
         public abstract object Clone(CloneContext context);
-
+        /// <summary>
+        /// Event raised when there's an Instant Change.
+        /// </summary>
+        /// <remarks>Automatically subscribed to by Threshold Events upon their creation, so no Rewire</remarks>
+        public event InstantChange<M>? InstantChangeEvt;
+        /// <summary>
+        /// Event raised when there's a change caused by OnAdvance
+        /// </summary>
+        /// <remarks>Automatically subscribed to by Threshold Events upon their creation, so no Rewire</remarks>
+        public event ContinuousChange<T, M>? ContinuousChangeEvt;
+        /// <summary>
+        /// Helper method for subclasses to mark to any subscribed events that there has been a change
+        /// </summary>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected void RaiseInstantChangeEvt(M before, M after)
+        {
+            if (before==after)
+            {
+                return;
+            }
+            InstantChangeEvt?.Invoke(this, before, after);
+        }
+        /// <summary>
+        /// Helper method for subclasses to indicate changes that occurred because of OnAdvance
+        /// </summary>
+        /// <param name="timeElapsed">How much time has the timeline advanced by?</param>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected void RaiseContinuousChangeEvt(T timeElapsed, M before, M after)
+        {
+            if (before == after)
+            {
+                return;
+            }
+            ContinuousChangeEvt?.Invoke(this, timeElapsed, before, after);
+        }
         //Note that there's no setters because that is specific to what the meter is holding and how it works.
         //These properties are for AbstractThresholdEvent to work with any kind of meter
     }

@@ -36,12 +36,14 @@ namespace Meters
             base.OnAdvance(sender, timeElapsed); //handles resetting instant change and checking sender
             if (!M.IsZero(Derivative)) //No point if the derivative is zero
             {
+                M oldValue = CurrentValue;
                 M nextValue = CurrentValue + 
                     (M.CreateChecked<T>(timeElapsed)*Derivative); //This is why M needs to be high precision, at least as much as T.
 
                 //Make sure we don't spill out of the range
                 _currentValue = M.Clamp(nextValue,MinValue,MaxValue);
                 //We won't automatically cut off the derivative at the clamp point,since it makes it easier to cancel LERPS and changes over time
+                RaiseContinuousChangeEvt(timeElapsed, oldValue, CurrentValue);
             }
         }
         /// <summary>

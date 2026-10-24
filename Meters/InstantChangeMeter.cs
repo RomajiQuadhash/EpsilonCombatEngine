@@ -178,21 +178,25 @@ namespace Meters
         /// <returns>True if the whole additional instant change can be applied, false otherwise.</returns>
         public bool AddInstantChange(M additionalChange)
         {
+            M beforeState = CurrentValue;
             M afterState = CurrentValue + additionalChange;
             if (afterState>MaxValue)
             {
                 _instantChange += MaxValue - CurrentValue; //amount needed to hit the maximum
                 _currentValue= MaxValue;
+                RaiseInstantChangeEvt(beforeState, _currentValue);
                 return false;
             }
             if (afterState<MinValue)
             {
                 _instantChange += MinValue - CurrentValue; //Add how much decrease there is to the existing
                 _currentValue= MinValue;
+                RaiseInstantChangeEvt(beforeState, _currentValue);
                 return false;
             }
             _instantChange += additionalChange;
             _currentValue = afterState;
+            RaiseInstantChangeEvt(beforeState, _currentValue);
             return true;
         }
         #endregion
