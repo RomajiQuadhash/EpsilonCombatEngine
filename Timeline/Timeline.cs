@@ -38,7 +38,7 @@ namespace Timeline
         /// <summary>
         /// An event that is raised when the timeline advances. All events on the timeline should subscribe to this event so they can update their time remaining when time advances.
         /// </summary>
-        public event EventHandler<T>? Advance;
+        public event Advance<T>? Advance;
         /// <summary>
         /// Status of the timeline, which determines what happens when Update is called and what actions are allowed. The timeline starts in the Open phase, and must be in the Open phase for events to be added or adjusted. 
         /// Calling Update will move the timeline through the phases in the order they are defined, with some exceptions for InstantAction phases that can occur multiple times between PostEffect and Display. 
