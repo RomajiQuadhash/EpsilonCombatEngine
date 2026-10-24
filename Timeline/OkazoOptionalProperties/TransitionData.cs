@@ -24,13 +24,13 @@ namespace Timeline.OkazoOptionalProperties
         /// If it is negative, this is the amount behind the threshold the meter was before crossing the threshold.
         /// Not scaled down by the range, so - range is going from one end of the range to the other.
         /// </summary>
-        public T Before { get; private set; }
+        public T Before { get; protected set; }
         /// <summary>
         /// The value after crossing the threshold. Always >=0, with 0 meaning no instant change.
         /// If it is positive, this is the amount past the threshold the meter was after crossing the threshold.
         /// Not scaled down by the range so range is the max value and a range worth of overshoot.
         /// </summary>
-        public T After { get; private set; }
+        public T After { get; protected set; }
         /// <summary>
         /// What the progressive change of the meter was at the time of crossing the threshold, not scaled down by the range.
         /// Usually positive, but could be negative if an instant change went in the opposite direction of the progressive change.
@@ -82,11 +82,20 @@ namespace Timeline.OkazoOptionalProperties
             Before = After-(instantChange);
             ProgressiveChange = progressiveChange;
         }
-
-        public int CompareTo(TransitionData<T>? other)
+        /// <summary>
+        /// The main method that should be overridden in any subclass.
+        /// </summary>
+        /// <param name="other">The other TransitionData</param>
+        /// <returns>1 if this should come after other, -1 if this should come before other, and 0 if inconclusive</returns>
+        public virtual int CompareTo(TransitionData<T>? other)
         {
             ArgumentNullException.ThrowIfNull(other);
-            
+
+            if (other.GetType()!=GetType())
+            {
+                return -other.CompareTo(this); //Try the other way around. (it will likely throw with a more relevant error message)
+            }
+
             //First, prioritize crossings that overshot the threshold if the other didn't
             if (After==T.Zero && other.After > T.Zero)
             {
