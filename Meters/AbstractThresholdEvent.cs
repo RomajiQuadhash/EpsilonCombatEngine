@@ -47,5 +47,41 @@ namespace Meters
         /// We might want to call them with allowNegative=true sometimes, but usually with it false.
         /// </remarks>
         protected abstract TimeOrNever<T> ComputeTimeRemaining();
+
+        /// <summary>
+        /// Which way do we care about crossing? If only one way, then crossing over and back undoes the change
+        /// </summary>
+        public ThresholdDirection Direction { get; set; } = ThresholdDirection.Both;
+        /// <summary>
+        /// The value this threshold is defined by. Almost always should be settable, if not, set should throw a helpful exception
+        /// </summary>
+        public abstract M ThresholdPoint { get; set; }
+
+        #region Subscriptions
+        /// <summary>
+        /// Called when an instant change occurs. Must be subscribed to in the constructor
+        /// </summary>
+        /// <param name="sender">Must be OwningMeter</param>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected abstract void OnInstantChange(object sender, M before, M after);
+        /// <summary>
+        /// Called when a meter finishes updating from OnAdvance.
+        /// </summary>
+        /// <param name="sender">Must be OwningMeter</param>
+        /// <param name="timeElapsed">How much time has the timeline advanced by?</param>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected abstract void OnContinuousChange(object sender, T timeElapsed, M before, M after);
+        #endregion
+    }
+    /// <summary>
+    /// Which way do we want the meter to care about crossing? If only one way, crossing the other direction is undone
+    /// </summary>
+    public enum ThresholdDirection
+    {
+        Both,
+        Up,
+        Down,
     }
 }
