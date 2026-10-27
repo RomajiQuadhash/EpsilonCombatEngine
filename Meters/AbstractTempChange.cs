@@ -44,7 +44,7 @@ namespace Meters
         /// </summary>
         /// <returns>True if the phase is InstantMeterChange, or if it is PlayerBleed*, EnemyBleed*, DamagePhase*, MeterChangePhase* 
         /// (where * is Start or End depending on LifeCyclePhase)</returns>
-        public bool IsOrdinaryPriority()
+        public virtual bool IsOrdinaryPriority()
         {
             if (Priority == null) return false;
             if (Priority == PriorityRank.InstantMeterChange) return true;
@@ -64,11 +64,41 @@ namespace Meters
                 _ => false,
             };
         }
-
         /// <summary>
-        /// Called by Trigger when in Apply, before adding it to PossibleEvents
+        /// Notify others that this event is occurring and call the proper function to apply or remove the effect.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">If the time isn't zero, can't trigger</exception>
+        public override void Trigger()
+        {
+            if (TimeRemaining.IsNever)
+            {
+                throw new InvalidOperationException("Can't trigger an event that will never occur.");
+            }
+            if (TimeRemaining.Time != T.Zero)
+            {
+                throw new InvalidOperationException("Events should only occur at time zero.");
+            }
+            InvokeOccurring();
+            if (LifeCyclePhase == ApplyOrRemove.Apply)
+            {
+                //Do what we should almost always do (but we can change it otherwise)
+                LifeCyclePhase = ApplyOrRemove.Remove;
+                OwningTimeline.AddPossibleEvent(this);
+                TriggerWhenApply();
+            }
+            else
+            {
+                OwningTimeline.Advance -= OnAdvance;
+                TriggerWhenRemove();
+            }
+        }
+        /// <summary>
+        /// Called by Trigger when in Apply after calling InvokeOccurring, changing to Remove, and adding to PossibleEvents
         /// </summary>
         public abstract void TriggerWhenApply();
+        /// <summary>
+        /// Called by Trigger when in Remove after calling InvokeOccurring and unsubscribing from Advance 
+        /// </summary>
         public abstract void TriggerWhenRemove();
     }
     /// <summary>
