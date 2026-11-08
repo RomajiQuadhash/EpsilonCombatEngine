@@ -60,6 +60,10 @@ namespace Timeline.OkazoOptionalProperties
 
             if (instantChange == T.Zero)
             {
+                if (progressiveChange == T.Zero)
+                {
+                    throw new ArgumentException("There was no change, so no transition. TransitionData shouldn't exist then");
+                }
                 //No instant change, so just absolute value the progressive change and scale by the range.
                 ProgressiveChange = T.Abs(progressiveChange);
                 Before=T.Zero;
