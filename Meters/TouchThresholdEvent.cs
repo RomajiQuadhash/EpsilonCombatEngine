@@ -14,7 +14,7 @@ namespace Meters
     /// Event triggered by a threshold being touched on a continuous meter
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric</typeparam>
+    /// <typeparam name="M">The numeric type used for the metric. Should be at least as precise as T</typeparam>
     public class TouchThresholdEvent<T, M> : AbstractThresholdEvent<T, M> where T : INumber<T> where M : INumber<M>
     {
         protected AbstractMeter<T, M> _owningMeter;
