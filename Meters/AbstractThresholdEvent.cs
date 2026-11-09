@@ -11,7 +11,7 @@ namespace Meters
     /// or crossing a specific threshold (like getting a vibe meter to sufficiently rage/focus to perform an action).
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric</typeparam>
+    /// <typeparam name="M">The numeric type used for the associated meter</typeparam>
     public abstract class AbstractThresholdEvent<T,M> : Okazo<T>, IOkPriority,IOkTransition<M> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>

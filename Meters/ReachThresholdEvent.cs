@@ -14,7 +14,7 @@ namespace Meters
     /// Event triggered by a threshold being reached on a continuous meter (or instantaneous meter)
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric. Should be at least as precise as T if derivative is not always 0</typeparam>
+    /// <typeparam name="M">The numeric type used for the associated meter. Should be at least as precise as T if derivative is not always 0</typeparam>
     public class ReachThresholdEvent<T, M> : AbstractThresholdEvent<T, M> where T : INumber<T> where M : INumber<M>
     {
         protected AbstractMeter<T, M> _owningMeter;

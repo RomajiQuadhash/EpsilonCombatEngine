@@ -12,10 +12,10 @@ namespace Meters
     /// <summary>
     /// An abstract placeholder for meters that track a numeric value over time.
     /// Examples might be health, mana, or a vibe meter.
-    /// Unlike a Counter, we don't need the time and metric types to be the same.
+    /// Unlike a Counter, we don't need the time and meter types to be the same.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric</typeparam>
+    /// <typeparam name="M">The numeric type used for the meter's value</typeparam>
     public abstract class AbstractMeter<T, M> : IAdvanceable<T>, IMeter<T>, ICombatCloneable, IEquatable<AbstractMeter<T,M>> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>

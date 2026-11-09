@@ -8,6 +8,11 @@ using Timeline.OkazoOptionalProperties;
 
 namespace Meters
 {
+    /// <summary>
+    /// An extension of TransitionData that is used for discrete meters, which have a tick rate rather than a continuous derivative.
+    /// </summary>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
+    /// <typeparam name="M">The numeric type used for the associated meter. Integer</typeparam>
     public class DiscreteTransitionData<T,M> : TransitionData<M> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>

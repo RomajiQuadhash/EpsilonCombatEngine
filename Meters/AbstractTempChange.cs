@@ -16,7 +16,7 @@ namespace Meters
     /// </summary>
     /// <remarks>Note that as an abstract class, this doesn't actually do those things and only exists to plan around</remarks>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the affected metric</typeparam>
+    /// <typeparam name="M">The numeric type used for the affected meter</typeparam>
     public abstract class AbstractTempChange<T, M>:Okazo<T>,IOkPriority where T : INumber<T> where M : INumber<M>
     {
         //Owners.

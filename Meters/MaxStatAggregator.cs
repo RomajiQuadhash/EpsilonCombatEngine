@@ -12,7 +12,7 @@ namespace Meters
     /// <summary>
     /// Gets what the maximum of a stat is across all the 
     /// </summary>
-    /// <typeparam name="T">Time unit of the timeline</typeparam>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     /// <typeparam name="M">The type of the stat modification meter to use</typeparam>
     public class MaxStatAggregator<T,M> : ICombatCloneable where T : INumber<T> where M : StatModificationMeter<T>
     {

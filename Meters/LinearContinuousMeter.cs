@@ -12,8 +12,8 @@ namespace Meters
     /// <summary>
     /// Meter that supports continuous changes to values instead of just jumps. Starts with change over time of 0
     /// </summary>
-    /// <typeparam name="T">Time unit of the timeline</typeparam>
-    /// <typeparam name="M">Time unit of this meter's value. Assumed to be at least as precise as T</typeparam>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
+    /// <typeparam name="M">The numeric type used for this meter's value. Assumed to be at least as precise as T</typeparam>
     /// <param name="timeline">The timeline that owns this meter</param>
     /// <param name="initialValue">The value that the meter starts at</param>
     /// <param name="minValue">Minimum of the meter</param>
