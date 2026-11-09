@@ -79,9 +79,13 @@ namespace Meters
         /// <param name="allowNegative">Ignored</param>
         /// <remarks>Since we only ever move in discrete jumps, touching only happens if we are at a point exactly</remarks>
         /// <returns>Never if we aren't there or 0 if we are</returns>
-        public override TimeOrNever<T> ThresholdTouch(M threshold, bool allowNegative)
+        public override TimeOrNever<T> ThresholdReach(M threshold, bool allowNegative)
         {
-            return new TimeOrNever<T>(threshold != CurrentValue);
+            if (threshold==CurrentValue)
+            {
+                return new(false); //We don't care if we instantly crossed it, we are at the threshold right now (so we "reached" it)
+            }
+            return new(!DidInstantlyCross(threshold,true));
         }
         /// <summary>
         /// Wrapper for DidInstantlyCross given there are no gradual changes
@@ -89,9 +93,9 @@ namespace Meters
         /// <param name="threshold">What threshold did this cross?</param>
         /// <param name="allowNegative">Ignored</param>
         /// <returns>0 if we did instantly cross, Never otherwise</returns>
-        public override TimeOrNever<T> ThresholdCross(M threshold, bool allowNegative)
+        public override TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative)
         {
-            return new TimeOrNever<T>(!DidInstantlyCross(threshold,false));
+            return new(!DidInstantlyCross(threshold,false));
         }
         public override object Clone(CloneContext context)
         {

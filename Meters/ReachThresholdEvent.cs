@@ -11,11 +11,11 @@ using Timeline.OkazoOptionalProperties;
 namespace Meters
 {
     /// <summary>
-    /// Event triggered by a threshold being touched on a continuous meter
+    /// Event triggered by a threshold being reached on a continuous meter (or instantaneous meter)
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric. Should be at least as precise as T</typeparam>
-    public class TouchThresholdEvent<T, M> : AbstractThresholdEvent<T, M> where T : INumber<T> where M : INumber<M>
+    /// <typeparam name="M">The numeric type used for the metric. Should be at least as precise as T if derivative is not always 0</typeparam>
+    public class ReachThresholdEvent<T, M> : AbstractThresholdEvent<T, M> where T : INumber<T> where M : INumber<M>
     {
         protected AbstractMeter<T, M> _owningMeter;
         protected bool _allowNegative;
@@ -28,12 +28,12 @@ namespace Meters
         /// </summary>
         protected bool _properlySubscribed;
 
-        public TouchThresholdEvent(AbstractMeter<T, M> owningMeter, M thresholdPoint, PriorityRank? priority, Timeline<T> owningTimeline)
+        public ReachThresholdEvent(AbstractMeter<T, M> owningMeter, M thresholdPoint, PriorityRank? priority, Timeline<T> owningTimeline)
     : this(owningMeter, thresholdPoint, priority, owningTimeline, instantFlag: false, allowNegative: false) { }
         /// <summary>
         /// Clone constructor: carries over the clone-only state.
         /// </summary>
-        protected TouchThresholdEvent(AbstractMeter<T, M> owningMeter, M thresholdPoint, PriorityRank? priority, Timeline<T> owningTimeline, bool instantFlag, bool allowNegative)
+        protected ReachThresholdEvent(AbstractMeter<T, M> owningMeter, M thresholdPoint, PriorityRank? priority, Timeline<T> owningTimeline, bool instantFlag, bool allowNegative)
         {
             _owningMeter = owningMeter;
             ThresholdPoint = thresholdPoint;
@@ -104,11 +104,11 @@ namespace Meters
 
         public override object Clone(CloneContext context)
         {
-            if (context.TryGet(this, out TouchThresholdEvent<T, M> existing)) return existing;
+            if (context.TryGet(this, out ReachThresholdEvent<T, M> existing)) return existing;
             if (!context.TryGet(OwningTimeline, out Timeline<T> clonedTimeline))
                 throw new UnrecoverableCloneException("Timeline must be cloned before its threshold event.");
             AbstractMeter<T,M> clonedMeter = context.GetOrClone(OwningMeter);
-            TouchThresholdEvent<T,M> clone = new(clonedMeter,ThresholdPoint,Priority,clonedTimeline,_instantFlag, _allowNegative);
+            ReachThresholdEvent<T,M> clone = new(clonedMeter,ThresholdPoint,Priority,clonedTimeline,_instantFlag, _allowNegative);
             context.Register(this, clone);
             
             //Move other properties
@@ -155,7 +155,7 @@ namespace Meters
                 //If it is going up, it can't cross through going down
                 return new(true);
             }
-            return OwningMeter.ThresholdTouch(ThresholdPoint, _allowNegative);
+            return OwningMeter.ThresholdReach(ThresholdPoint, _allowNegative);
         }
         protected override void OnInstantChange(object sender, M before, M after)
         {
@@ -213,7 +213,7 @@ namespace Meters
             {
                 return; //We didn't cross so no negative
             }
-            TimeOrNever<T> anticipatedTimeRemaining = OwningMeter.ThresholdTouch(ThresholdPoint, true);
+            TimeOrNever<T> anticipatedTimeRemaining = OwningMeter.ThresholdReach(ThresholdPoint, true);
             if (new TimeOrNever<T>(-timeElapsed).CompareTo(anticipatedTimeRemaining)<=0)
             {
                 //This means if we allowed negative, the value would be, at earliest, before advancing.
