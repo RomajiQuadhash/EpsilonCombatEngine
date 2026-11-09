@@ -10,6 +10,16 @@ using Timeline;
 
 namespace Meters
 {
+    /// <summary>
+    /// A meter that changes in discrete steps over time.
+    /// Use instead of LinearContinuousMeter if your meter is an integer type.
+    /// </summary>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
+    /// <typeparam name="M">The numeric type used for this meter's value. Integer</typeparam>
+    /// <param name="timeline">The timeline this meter is associated with</param>
+    /// <param name="initialValue">The initial value of this meter</param>
+    /// <param name="minValue">The minimum value of this meter</param>
+    /// <param name="maxValue">The maximum value of this meter</param>
     public class LinearDiscreteMeter<T, M>(Timeline<T> timeline, M initialValue, M minValue, M maxValue) : InstantChangeMeter<T,M>(timeline, initialValue, minValue, maxValue) where T : INumber<T> where M : IBinaryInteger<M>
     {
         private M _derivative = M.Zero;

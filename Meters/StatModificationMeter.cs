@@ -14,7 +14,7 @@ namespace Meters
     /// A meter used for stats that can be modified with helpful modification helpers.
     /// Units of this are called "Ratio"
     /// </summary>
-    /// <typeparam name="T">Time unit of the timeline</typeparam>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     public class StatModificationMeter<T> : InstantChangeMeter<T, Rational<long>> where T : INumber<T>
     {
         /// <summary>

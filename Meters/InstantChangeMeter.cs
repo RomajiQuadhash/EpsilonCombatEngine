@@ -13,8 +13,8 @@ namespace Meters
     /// <summary>
     /// Simple meter that supports only instantaneous changes.
     /// </summary>
-    /// <typeparam name="T">Time unit of the timeline</typeparam>
-    /// <typeparam name="M">Time unit of this meter's value</typeparam>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
+    /// <typeparam name="M">The numeric type used for this meter's value.</typeparam>
     public class InstantChangeMeter<T, M> : AbstractMeter<T,M> where T : INumber<T> where M : INumber<M>
     {
 

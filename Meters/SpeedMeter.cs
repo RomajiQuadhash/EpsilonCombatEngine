@@ -13,7 +13,7 @@ namespace Meters
     /// <summary>
     /// A meter specifically for the speed stat, including some key calculations and sharing of values
     /// </summary>
-    /// <typeparam name="T">Time unit of the timeline</typeparam>
+    /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     public class SpeedMeter<T> : StatModificationMeter<T> where T : INumber<T>
     {
         /// <summary>
