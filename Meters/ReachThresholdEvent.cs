@@ -123,7 +123,7 @@ namespace Meters
         {
             if (sender != OwningTimeline)
             {
-                throw new InvalidOperationException("Don't subscribe a card to a timeline it doesn't belong to.");
+                throw new InvalidOperationException("Don't subscribe an event to a timeline it doesn't belong to.");
             }
             if (_properlySubscribed==false)
             {
