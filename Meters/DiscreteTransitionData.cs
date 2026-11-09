@@ -55,8 +55,15 @@ namespace Meters
             ArgumentNullException.ThrowIfNull(other);
 
             if (other is not DiscreteTransitionData<T,M> discreteOther)
-                throw new InvalidOperationException("Cannot compare discrete with continuous."); //this also throws if other has the wrong timeline unit but...
-            //well, if that happens, something is very wrong, so we don't need to handle it gracefully.
+            {
+                //There is exactly one case where we're okay: If the other doesn't have a progressive change, since that's from an instant change meter, which must use a type that doesn't give us a tick rate.
+                if (other.ProgressiveChange == M.Zero)
+                {
+                    //This isn't perfect because we lose the distinction between true instant changes and ticks
+                    return base.CompareTo(other);
+                }
+                throw new InvalidOperationException($"{other.GetType().Name} is using an integer type, has a progressive change, but is not using {nameof(DiscreteTransitionData<T,M>)}. This is because you're using the wrong event type, likely because you're using the wrong meter type.");
+            }
 
             // Tier 1: Bigger instant change wins (scaled by range)
             M myScaledInstantChange = InstantChange * other.Range;
