@@ -42,7 +42,7 @@ namespace Meters
         /// Used to compute the remaining time until the threshold event occurs.
         /// </summary>
         /// <returns>The remaining time until the threshold event occurs, or Never if it isn't predicted to occur</returns>
-        /// <remarks>Why not just call OwningMeter.ThresholdTouch or OwningMeter.ThresholdCross?
+        /// <remarks>Why not just call OwningMeter.ThresholdReach or OwningMeter.ThresholdPass?
         /// Well, which one is correct might depend of what the purpose of the threshold is, but there's another difficulty.
         /// We might want to call them with allowNegative=true sometimes, but usually with it false.
         /// </remarks>

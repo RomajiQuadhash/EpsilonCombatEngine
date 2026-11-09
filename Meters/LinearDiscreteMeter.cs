@@ -57,83 +57,90 @@ namespace Meters
             RaiseContinuousChangeEvt(timeElapsed, oldValue, CurrentValue);
         }
         /// <summary>
-        /// Returns, given current properties, the time at which the meter will touch the specified threshold.
-        /// "touch" is equaling or being the first tick after passing.
+        /// Returns, given current properties, the time at which the meter will reach the specified threshold.
+        /// "reach" is equaling, instantly jumping past, or being the first tick after passing.
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to reach</param>
         /// <param name="allowNegative">Allow negative values. Will be the earliest value it stays equal to the threshold or just past it.
         /// If false, if moving away, then Never</param>
-        /// <returns>The time at which the meter will touch the threshold or Never if it won't. 0 if already there</returns>
-        public override TimeOrNever<T> ThresholdTouch(M threshold, bool allowNegative)
+        /// <returns>The time at which the meter will reach the threshold or Never if it won't. 0 if already there (and not allowing negative)</returns>
+        public override TimeOrNever<T> ThresholdReach(M threshold, bool allowNegative)
         {
             if (M.IsZero(Derivative))
             {
-                return base.ThresholdTouch(threshold, allowNegative);
+                return base.ThresholdReach(threshold, allowNegative);
             }
             
             M distanceToMake = threshold - CurrentValue;
             if (M.IsZero(distanceToMake))
             {
-                return new TimeOrNever<T>(false);
+                if (allowNegative)
+                {
+                    //If we're allowing negative, the soonest was when we just ticked over.
+                    return new(-TimeSinceLastIncrement);
+                } else
+                {
+                    return new(false);
+                }
             }
             if (M.Sign(distanceToMake)*M.Sign(Derivative)<0 && !allowNegative)
             {
                 //Not allowed to use final sign negative.
-                return new TimeOrNever<T>(true);
+                return new(true);
             }
             M testSteps = distanceToMake /Derivative;
             M afterSteps = distanceToMake - testSteps * Derivative;
             if (M.Sign(afterSteps) * M.Sign(Derivative) < 0)
             {
                 //If the sign product is negative, then we rounded towards 0, so the soonest before another change is one less
-                return new TimeOrNever<T>(T.CreateChecked(testSteps) * DerivativeDenominator - DerivativeDenominator - TimeSinceLastIncrement);
+                return new(T.CreateChecked(testSteps) * DerivativeDenominator - DerivativeDenominator - TimeSinceLastIncrement);
             }
             if (M.IsZero(afterSteps))
             {
                 //Exactly on the money
-                return new TimeOrNever<T>(T.CreateChecked(testSteps) * DerivativeDenominator - TimeSinceLastIncrement);
+                return new(T.CreateChecked(testSteps) * DerivativeDenominator - TimeSinceLastIncrement);
             }
             //We rounded down, so we need to go one more
-            return new TimeOrNever<T>(T.CreateChecked(testSteps) * DerivativeDenominator + 
+            return new(T.CreateChecked(testSteps) * DerivativeDenominator + 
                 DerivativeDenominator - TimeSinceLastIncrement); //This part is to get to the next tick forward.
         }
         /// <summary>
-        /// Almost the same as ThresholdTouch, but with a few differences:
+        /// Almost the same as ThresholdReach, but with a few differences:
         /// 1. If the meter isn't moving, it will return Never instead of 0 if the meter is already at the threshold.
         /// 2. If a tick lands exactly on the threshold, it will be the next tick instead
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to pass</param>
         /// <param name="allowNegative">Allow negative values. Will be the latest value it stays equal to the threshold or just past it.
         /// If false, if moving away, then Never</param>
-        /// <returns>The time at which the meter will cross the threshold or Never if it won't. Next tick if already at the threshold and moving</returns>
-        public override TimeOrNever<T> ThresholdCross(M threshold, bool allowNegative)
+        /// <returns>The time at which the meter will pass the threshold or Never if it won't. Next tick if already at the threshold and moving</returns>
+        public override TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative)
         {
             if (M.IsZero(Derivative))
             {
-                return base.ThresholdCross(threshold, allowNegative);
+                return base.ThresholdPass(threshold, allowNegative);
             }
-            TimeOrNever<T> touch = ThresholdTouch(threshold, allowNegative);
-            if (touch.IsNever) return touch;
+            TimeOrNever<T> reach = ThresholdReach(threshold, allowNegative);
+            if (reach.IsNever) return reach;
 
-            // Check if the touch tick landed exactly on the threshold.
-            // If so, the cross is the next tick (one more increment in the direction of the derivative).
+            // Check if the reach tick landed exactly on the threshold.
+            // If so, the pass is the next tick (one more increment in the direction of the derivative).
             M distanceToMake = threshold - CurrentValue;
             if (M.IsZero(distanceToMake))
             {
-                // Already at the threshold. The "cross" is the next tick where it leaves,
+                // Already at the threshold. The "pass" is the next tick where it leaves,
                 // if the meter is moving. If not moving, base handles it (returns Never).
-                return new TimeOrNever<T>(DerivativeDenominator - TimeSinceLastIncrement);
+                return new(DerivativeDenominator - TimeSinceLastIncrement);
             }
-            // The touch tick landed exactly if distanceToMake is an exact multiple of Derivative.
-            // (This is the same condition that ThresholdTouch checks internally as afterSteps == 0.)
+            // The reach tick landed exactly if distanceToMake is an exact multiple of Derivative.
+            // (This is the same condition that ThresholdReach checks internally as afterSteps == 0.)
             M remainder = distanceToMake % Derivative;
             if (M.IsZero(remainder))
             {
-                // Exact landing: cross is one tick later.
-                return new TimeOrNever<T>(touch.Time + DerivativeDenominator);
+                // Exact landing: pass is one tick later.
+                return new(reach.Time + DerivativeDenominator);
             }
-            // Skipped over: cross == touch.
-            return touch;
+            // Skipped over: pass == reach.
+            return reach;
         }
         public override object Clone(CloneContext context)
         {

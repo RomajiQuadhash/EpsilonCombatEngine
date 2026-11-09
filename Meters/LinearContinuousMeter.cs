@@ -47,47 +47,48 @@ namespace Meters
             }
         }
         /// <summary>
-        /// Returns, given current properties, the time at which the meter will touch the specified threshold.
+        /// Returns, given current properties, the time at which the meter will reach the specified threshold.
         /// Note that this is a prediction based on current properties and is possibly rounded if T is less precise than M
+        /// "reach" means that the meter will be at the threshold or it has just now instantly jumped over it.
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to reach</param>
         /// <param name="allowNegative">If true, will return a value in the past if the derivative is in the other direction from the target</param>
-        /// <returns>The time at which the meter will touch the threshold or Never if it won't. 0 if already there</returns>
-        public override TimeOrNever<T> ThresholdTouch(M threshold, bool allowNegative)
+        /// <returns>The time at which the meter will reach the threshold or Never if it won't. 0 if already there</returns>
+        public override TimeOrNever<T> ThresholdReach(M threshold, bool allowNegative)
         {
             if (M.IsZero(Derivative))
             {
-                return base.ThresholdTouch(threshold, allowNegative);
+                return base.ThresholdReach(threshold, allowNegative);
             }
             M distanceToMake = threshold - CurrentValue;
             if (M.IsZero(distanceToMake))
             {
-                return new TimeOrNever<T>(false);
+                return new(false);
             }
             M divisionResult = distanceToMake / Derivative;
             if (!M.IsFinite(divisionResult)) //Likely will be short circuited since Derivative isn't 0, but good to be sure
             {
-                return new TimeOrNever<T>(true);
+                return new(true);
             }
             if (M.IsPositive(divisionResult) || allowNegative)
             {
-                return new TimeOrNever<T>(T.CreateTruncating(divisionResult));
+                return new(T.CreateTruncating(divisionResult));
             }
             //Otherwise we're negative and negatives are not allowed
-            return new TimeOrNever<T>(true);
+            return new(true);
         }
         /// <summary>
-        /// The same as ThresholdTouch, but returns never if we are at the threshold and not moving.
+        /// The same as ThresholdReach, but returns never if we are at the threshold and not moving.
         /// It also counts if we jumped over the threshold instantly
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to pass</param>
         /// <param name="allowNegative">If true, will return a value in the past if the derivative is in the other direction from the target</param>
-        /// <returns>The time at which the meter will cross the threshold or Never if it won't.</returns>
-        public override TimeOrNever<T> ThresholdCross(M threshold, bool allowNegative)
+        /// <returns>The time at which the meter will pass the threshold or Never if it won't.</returns>
+        public override TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative)
         {
             if (M.IsZero(Derivative))
-                return base.ThresholdCross(threshold, allowNegative);
-            return ThresholdTouch(threshold, allowNegative);
+                return base.ThresholdPass(threshold, allowNegative);
+            return ThresholdReach(threshold, allowNegative);
         }
         public override object Clone(CloneContext context)
         {
