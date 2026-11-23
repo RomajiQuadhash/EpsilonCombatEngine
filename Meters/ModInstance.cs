@@ -30,7 +30,9 @@ namespace Meters
             }
             PerTick = perTick;
             TickRate = tickRate;
-            Magnitude = Rational<long>.CreateChecked(perTick)/Rational<long>.CreateChecked(tickRate);
+            //Done in a wider type so the division has room, then rounded back to a small denominator.
+            Magnitude = RationalConversion.LimitDenominator(
+                RationalConversion.Widen(RationalConversion.ToRational(perTick)) / RationalConversion.Widen(RationalConversion.ToRational(tickRate)));
         }
         /// <summary>
         /// How much change this ModInstance wants to apply per tick.

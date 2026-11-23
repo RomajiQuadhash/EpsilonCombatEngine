@@ -38,7 +38,7 @@ namespace Meters
             {
                 M oldValue = CurrentValue;
                 M nextValue = CurrentValue + 
-                    (M.CreateChecked<T>(timeElapsed)*Derivative); //This is why M needs to be high precision, at least as much as T.
+                    (RationalConversion.ConvertChecked<T, M>(timeElapsed)*Derivative); //This is why M needs to be high precision, at least as much as T.
 
                 //Make sure we don't spill out of the range
                 _currentValue = M.Clamp(nextValue,MinValue,MaxValue);
@@ -72,7 +72,7 @@ namespace Meters
             }
             if (M.IsPositive(divisionResult) || allowNegative)
             {
-                return new(T.CreateTruncating(divisionResult));
+                return new(RationalConversion.ConvertTruncating<M, T>(divisionResult));
             }
             //Otherwise we're negative and negatives are not allowed
             return new(true);
@@ -155,7 +155,7 @@ namespace Meters
             {
                 throw new ArgumentException($"deltaTime needs to be >=0, but it was {deltaTime} instead");
             }
-            _derivative += totalChange / M.CreateTruncating<T>(deltaTime);
+            _derivative += totalChange / RationalConversion.ConvertTruncating<T, M>(deltaTime);
             //Return if we can do the full Lerp
             return actualTotalChange == totalChange;
         }

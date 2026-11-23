@@ -193,8 +193,10 @@ namespace Meters
                 throw new ArgumentException($"Denominator must be positive, not {newDDenominator}");
             }
             //Save what would spill over. Make everything a rational, including the time in case it is an integer/low precision
-            spillover = Rational<long>.CreateChecked(Derivative)*
-                (Rational<long>.CreateChecked(TimeSinceLastIncrement)/ Rational<long>.CreateChecked(DerivativeDenominator));
+            //Done in a wider type so the multiplication has room, then rounded back to a small denominator.
+            spillover = RationalConversion.LimitDenominator(
+                RationalConversion.Widen(RationalConversion.ToRational(Derivative)) *
+                (RationalConversion.Widen(RationalConversion.ToRational(TimeSinceLastIncrement)) / RationalConversion.Widen(RationalConversion.ToRational(DerivativeDenominator))));
 
             //Now set everything
             _derivative=newDerivative;
