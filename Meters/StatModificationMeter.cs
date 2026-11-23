@@ -20,7 +20,7 @@ namespace Meters
         /// <summary>
         /// The value of the stat when there are no modifications.
         /// </summary>
-        public int BaseStat { get; init; }
+        public int BaseStat { get; }
         /// <summary>
         /// Creates a new StatModificationMeter with 0 (no) buff or debuff.
         /// </summary>

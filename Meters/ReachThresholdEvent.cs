@@ -56,7 +56,7 @@ namespace Meters
 
         public PriorityRank? SettablePriority { get; set; }
         public override M ThresholdPoint { get; set; }
-        public Timeline<T> OwningTimeline {  get; init; }
+        public Timeline<T> OwningTimeline { get; }
         public override PriorityRank? Priority => SettablePriority;
 
         /// <summary>

@@ -22,7 +22,7 @@ namespace Meters
         private M _minValue;
         private M _maxValue;
         private M _instantChange;
-        public override Timeline<T> OwningTimeline { get; init; }
+        public override Timeline<T> OwningTimeline { get; }
         public override M CurrentValue => _currentValue;
         /// <summary>
         /// Always 0 since no continuous change will ever apply

@@ -19,7 +19,7 @@ namespace Meters
         /// <summary>
         /// The Aggregator that stores all the other speeds to compare to
         /// </summary>
-        public MaxStatAggregator<T, SpeedMeter<T>> SpeedAggregator { get; init; }
+        public MaxStatAggregator<T, SpeedMeter<T>> SpeedAggregator { get; }
         /// <summary>
         /// Creates a new speed meter.
         /// </summary>

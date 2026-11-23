@@ -16,7 +16,7 @@ namespace Meters
     /// <typeparam name="M">The type of the stat modification meter to use</typeparam>
     public class MaxStatAggregator<T,M> : ICombatCloneable where T : INumber<T> where M : StatModificationMeter<T>
     {
-        public ISet<M> Meters { get; init; }
+        public ISet<M> Meters { get; }
 
         public MaxStatAggregator()
         {

@@ -22,7 +22,7 @@ namespace Meters
         /// The timeline this meter belongs to. Should NEVER change, since a timeline should exist for the entire lifetime of a battle,
         /// and all meters should be destroyed when the battle ends.
         /// </summary>
-        public abstract Timeline<T> OwningTimeline { get; init; }
+        public abstract Timeline<T> OwningTimeline { get; }
         /// <summary>
         /// Note that there might be sub-details if say, M is a discrete type.
         /// You should use this for calculations though.
