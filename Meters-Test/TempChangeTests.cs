@@ -227,8 +227,8 @@ public class TempChangeTests
     public void DerivativeChangeAppliesAndIsUndone()
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 0, -1000, 1000);
-        TempContinuousChange<int, int> change = new(meter, 3, 2, 5, PriorityRank.MeterChangePhaseStart, PriorityRank.MeterChangePhaseEnd, timeline);
+        LinearContinuousMeter<int, double> meter = new(timeline, 0, -1000, 1000);
+        TempContinuousChange<int, double> change = new(meter, 3, 2, 5, PriorityRank.MeterChangePhaseStart, PriorityRank.MeterChangePhaseEnd, timeline);
         timeline.AddEvent(change);
         Assert.Equal(0, meter.Derivative);
 
@@ -245,9 +245,9 @@ public class TempChangeTests
     public void DerivativeChangesStack()
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 0, -1000, 1000);
-        TempContinuousChange<int, int> longChange = new(meter, 3, 2, 5, PriorityRank.MeterChangePhaseStart, PriorityRank.MeterChangePhaseEnd, timeline); //From 2 to 7
-        TempContinuousChange<int, int> shortChange = new(meter, 2, 4, 2, PriorityRank.MeterChangePhaseStart, PriorityRank.MeterChangePhaseEnd, timeline); //From 4 to 6
+        LinearContinuousMeter<int, double> meter = new(timeline, 0, -1000, 1000);
+        TempContinuousChange<int, double> longChange = new(meter, 3, 2, 5, PriorityRank.MeterChangePhaseStart, PriorityRank.MeterChangePhaseEnd, timeline); //From 2 to 7
+        TempContinuousChange<int, double> shortChange = new(meter, 2, 4, 2, PriorityRank.MeterChangePhaseStart, PriorityRank.MeterChangePhaseEnd, timeline); //From 4 to 6
         timeline.AddEvent(longChange);
         timeline.AddEvent(shortChange);
         MostRecentEventHolder<int> lastRemoved = new();

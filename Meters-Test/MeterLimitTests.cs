@@ -18,9 +18,9 @@ public class MeterLimitTests
     public void ContinuousThresholdAboveMaximumNeverOccurs(int derivative)
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 90, 0, 100);
+        LinearContinuousMeter<int, double> meter = new(timeline, 90, 0, 100);
         meter.SetDerivative(derivative);
-        ReachThresholdEvent<int, int> threshold = new(meter, 150, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
+        ReachThresholdEvent<int, double> threshold = new(meter, 150, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
         timeline.AddEvent(threshold);
         MostRecentEventHolder<int> thresholdOccurred = new();
         threshold.Occurring += thresholdOccurred.OnTrigger;
@@ -47,9 +47,9 @@ public class MeterLimitTests
     public void ContinuousThresholdBelowMinimumNeverOccurs(int derivative)
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 10, 0, 100);
+        LinearContinuousMeter<int, double> meter = new(timeline, 10, 0, 100);
         meter.SetDerivative(derivative);
-        ReachThresholdEvent<int, int> threshold = new(meter, -50, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
+        ReachThresholdEvent<int, double> threshold = new(meter, -50, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
         timeline.AddEvent(threshold);
         MostRecentEventHolder<int> thresholdOccurred = new();
         threshold.Occurring += thresholdOccurred.OnTrigger;
@@ -103,20 +103,21 @@ public class MeterLimitTests
     {
         Timeline<int> timeline = new();
         InstantChangeMeter<int, int> instant = new(timeline, 50, 0, 100);
-        LinearContinuousMeter<int, int> continuous = new(timeline, 50, 0, 100);
+        LinearContinuousMeter<int, double> continuous = new(timeline, 50, 0, 100);
         continuous.SetDerivative(10);
         LinearDiscreteMeter<int, int> discrete = new(timeline, 50, 0, 100);
         discrete.SetDerivative(10, 2, out _);
 
-        foreach (AbstractMeter<int, int> meter in new AbstractMeter<int, int>[] { instant, continuous, discrete })
+        foreach (int outside in new[] { 101, 150, -1, -50 })
         {
-            foreach (int outside in new[] { 101, 150, -1, -50 })
+            foreach (bool allowNegative in new[] { false, true })
             {
-                foreach (bool allowNegative in new[] { false, true })
-                {
-                    Assert.True(meter.ThresholdReach(outside, allowNegative).IsNever, $"{meter.GetType().Name} reach {outside}");
-                    Assert.True(meter.ThresholdPass(outside, allowNegative).IsNever, $"{meter.GetType().Name} pass {outside}");
-                }
+                Assert.True(instant.ThresholdReach(outside, allowNegative).IsNever, $"Instant reach {outside}");
+                Assert.True(instant.ThresholdPass(outside, allowNegative).IsNever, $"Instant pass {outside}");
+                Assert.True(continuous.ThresholdReach(outside, allowNegative).IsNever, $"Continuous reach {outside}");
+                Assert.True(continuous.ThresholdPass(outside, allowNegative).IsNever, $"Continuous pass {outside}");
+                Assert.True(discrete.ThresholdReach(outside, allowNegative).IsNever, $"Discrete reach {outside}");
+                Assert.True(discrete.ThresholdPass(outside, allowNegative).IsNever, $"Discrete pass {outside}");
             }
         }
     }
@@ -126,9 +127,9 @@ public class MeterLimitTests
     public void ContinuousThresholdOnMaximumOccurs()
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 90, 0, 100);
+        LinearContinuousMeter<int, double> meter = new(timeline, 90, 0, 100);
         meter.SetDerivative(10);
-        ReachThresholdEvent<int, int> threshold = new(meter, 100, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
+        ReachThresholdEvent<int, double> threshold = new(meter, 100, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
         timeline.AddEvent(threshold);
         MostRecentEventHolder<int> thresholdOccurred = new();
         threshold.Occurring += thresholdOccurred.OnTrigger;
@@ -147,9 +148,9 @@ public class MeterLimitTests
     public void ContinuousThresholdOnMinimumOccurs()
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 10, 0, 100);
+        LinearContinuousMeter<int, double> meter = new(timeline, 10, 0, 100);
         meter.SetDerivative(-5);
-        ReachThresholdEvent<int, int> threshold = new(meter, 0, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
+        ReachThresholdEvent<int, double> threshold = new(meter, 0, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
         timeline.AddEvent(threshold);
         MostRecentEventHolder<int> thresholdOccurred = new();
         threshold.Occurring += thresholdOccurred.OnTrigger;
@@ -212,9 +213,9 @@ public class MeterLimitTests
     public void RaisingTheMaximumLetsTheThresholdOccur()
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 90, 0, 100);
+        LinearContinuousMeter<int, double> meter = new(timeline, 90, 0, 100);
         meter.SetDerivative(10);
-        ReachThresholdEvent<int, int> threshold = new(meter, 150, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
+        ReachThresholdEvent<int, double> threshold = new(meter, 150, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
         timeline.AddEvent(threshold);
         MostRecentEventHolder<int> thresholdOccurred = new();
         threshold.Occurring += thresholdOccurred.OnTrigger;
@@ -231,9 +232,9 @@ public class MeterLimitTests
     public void LoweringTheMaximumPutsTheThresholdOutOfReach()
     {
         Timeline<int> timeline = new();
-        LinearContinuousMeter<int, int> meter = new(timeline, 50, 0, 100);
+        LinearContinuousMeter<int, double> meter = new(timeline, 50, 0, 100);
         meter.SetDerivative(10);
-        ReachThresholdEvent<int, int> threshold = new(meter, 80, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
+        ReachThresholdEvent<int, double> threshold = new(meter, 80, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
         timeline.AddEvent(threshold);
         Assert.Equal(new TimeOrNever<int>(3), threshold.TimeRemaining);
 
