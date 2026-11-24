@@ -39,6 +39,20 @@ namespace Meters
         public override T DerivativeDenominator => _derivativeDenominator;
         #region Function Overrides
         /// <summary>
+        /// Everything about a discrete meter that moving time forward can change.
+        /// AdvanceTicks takes one of these and gives back another, so it can be asked "what would happen" without anything actually happening.
+        /// </summary>
+        /// <param name="Value">The value of the meter</param>
+        /// <param name="TimeSinceLastIncrement">How far into the tick in progress it is. In range [0,DerivativeDenominator)</param>
+        /// <param name="Derivative">How much each tick adds</param>
+        /// <param name="DerivativeDenominator">How much time is between ticks</param>
+        /// <param name="TicksLanded">How many ticks have landed since the state the advance started from. Negative if it rewound past some</param>
+        protected readonly record struct TickState(M Value, T TimeSinceLastIncrement, M Derivative, T DerivativeDenominator, M TicksLanded);
+        /// <summary>
+        /// The meter as it is right now, in the form AdvanceTicks works with.
+        /// </summary>
+        protected TickState CurrentTickState => new(_currentValue, TimeSinceLastIncrement, _derivative, _derivativeDenominator, M.Zero);
+        /// <summary>
         /// Advance the meter forward. Every time it hits DerivativeDenominator, it increases by derivative.
         /// </summary>
         /// <param name="sender">Must be the owning timeline</param>
@@ -46,25 +60,99 @@ namespace Meters
         public override void OnAdvance(object? sender, T timeElapsed)
         {
             base.OnAdvance(sender, timeElapsed); //Reset instant change and check sender.
-            if (M.IsZero(Derivative))
-            {
-                return;
-            }
             M oldValue = CurrentValue;
-            T nextTimeSinceLastIncrement = TimeSinceLastIncrement + timeElapsed;
+            TickState start = CurrentTickState;
+            CommitTickState(timeElapsed, start, AdvanceTicks(timeElapsed, start));
+            RaiseContinuousChangeEvt(timeElapsed, oldValue, CurrentValue); //Does nothing if the value didn't change
+        }
+        /// <summary>
+        /// Works out what the meter would be after the time provided, starting from the state provided.
+        /// Changes nothing. OnAdvance passes the result to CommitTickState, which is the only thing that makes it real.
+        /// Subclasses that change the derivative partway through an advance override this and call the base once per piece,
+        /// passing the state each piece returns into the next.
+        /// </summary>
+        /// <param name="timeElapsed">How much time to move forward by. Negative when rewinding</param>
+        /// <param name="start">The state of the meter before this time passes</param>
+        /// <returns>The state of the meter after this time passes</returns>
+        protected virtual TickState AdvanceTicks(T timeElapsed, TickState start)
+        {
+            if (M.IsZero(start.Derivative))
+            {
+                return start;
+            }
+            T nextTimeSinceLastIncrement = start.TimeSinceLastIncrement + timeElapsed;
 
             // Floor division and positive modulo:
             // floor(n/d) and n mod d for n possibly negative.
             // This keeps TimeSinceLastIncrement in [0, Denominator) and applies
             // the correct number of increments (negative if rewinding).
-            T remainder = ((nextTimeSinceLastIncrement % DerivativeDenominator) + DerivativeDenominator) % DerivativeDenominator;
-            T floorQuotient = (nextTimeSinceLastIncrement - remainder) / DerivativeDenominator;
-
-            TimeSinceLastIncrement = remainder;
-
+            T remainder = ((nextTimeSinceLastIncrement % start.DerivativeDenominator) + start.DerivativeDenominator) % start.DerivativeDenominator;
+            T floorQuotient = (nextTimeSinceLastIncrement - remainder) / start.DerivativeDenominator;
             M numberOfIncrements = M.CreateTruncating(floorQuotient);
-            _currentValue = M.Clamp(_currentValue + Derivative * numberOfIncrements, MinValue, MaxValue);
-            RaiseContinuousChangeEvt(timeElapsed, oldValue, CurrentValue);
+
+            // If the time elapsed is exactly what TimeUntilTick said a tick was away, land exactly on that tick.
+            // With a floating point T, the addition and modulo above can come out a hair to either side of it.
+            // The neighbors are checked since that hair can also push the count off: just missing the tick loses one,
+            // and the division then landing just under a whole number loses another when it is truncated.
+            M oneFewer = numberOfIncrements - M.One;
+            M oneMore = numberOfIncrements + M.One;
+            M twoMore = oneMore + M.One;
+            if (timeElapsed == TimeUntilTick(numberOfIncrements, start))
+            {
+                remainder = T.Zero;
+            }
+            else if (timeElapsed == TimeUntilTick(oneMore, start))
+            {
+                numberOfIncrements = oneMore;
+                remainder = T.Zero;
+            }
+            else if (timeElapsed == TimeUntilTick(twoMore, start))
+            {
+                numberOfIncrements = twoMore;
+                remainder = T.Zero;
+            }
+            else if (timeElapsed == TimeUntilTick(oneFewer, start)) //Technically off if M is unsigned but if M was unsigned, the meter couldn't decrease.
+            {
+                numberOfIncrements = oneFewer;
+                remainder = T.Zero;
+            }
+
+            return start with
+            {
+                Value = M.Clamp(start.Value + start.Derivative * numberOfIncrements, MinValue, MaxValue),
+                TimeSinceLastIncrement = remainder,
+                TicksLanded = start.TicksLanded + numberOfIncrements
+            };
+        }
+        /// <summary>
+        /// Makes the result of AdvanceTicks real. Subclasses with more state that an advance changes override this and call the base.
+        /// </summary>
+        /// <param name="timeElapsed">How much time the advance moved forward by</param>
+        /// <param name="start">The state before the advance</param>
+        /// <param name="end">The state AdvanceTicks worked out for after the advance</param>
+        protected virtual void CommitTickState(T timeElapsed, TickState start, TickState end)
+        {
+            _currentValue = end.Value;
+            TimeSinceLastIncrement = end.TimeSinceLastIncrement;
+            _derivative = end.Derivative;
+            _derivativeDenominator = end.DerivativeDenominator;
+        }
+        /// <summary>
+        /// How long from now until a tick lands, counting from the next one.
+        /// Every prediction of a tick's time must come from here, since AdvanceTicks compares against this exact calculation.
+        /// </summary>
+        /// <param name="ticksFromNow">1 for the next tick, 2 for the one after. 0 is the tick that most recently landed and negatives are before that</param>
+        /// <returns>The time until that tick. Negative or zero if it is in the past</returns>
+        protected T TimeUntilTick(M ticksFromNow)
+        {
+            return TimeUntilTick(ticksFromNow, CurrentTickState);
+        }
+        /// <summary>
+        /// The same as TimeUntilTick, but for a state that might not be the meter's real one.
+        /// </summary>
+        protected static T TimeUntilTick(M ticksFromNow, TickState state)
+        {
+            return T.CreateChecked(ticksFromNow) * state.DerivativeDenominator - state.TimeSinceLastIncrement;
         }
         /// <summary>
         /// Returns, given current properties, the time at which the meter will reach the specified threshold.
@@ -98,21 +186,20 @@ namespace Meters
                 //Not allowed to use final sign negative.
                 return new(true);
             }
-            M testSteps = distanceToMake /Derivative;
+            M testSteps = distanceToMake / Derivative;
             M afterSteps = distanceToMake - testSteps * Derivative;
             if (M.Sign(afterSteps) * M.Sign(Derivative) < 0)
             {
                 //If the sign product is negative, then we rounded towards 0, so the soonest before another change is one less
-                return new(T.CreateChecked(testSteps) * DerivativeDenominator - DerivativeDenominator - TimeSinceLastIncrement);
+                return new(TimeUntilTick(testSteps - M.One));
             }
             if (M.IsZero(afterSteps))
             {
                 //Exactly on the money
-                return new(T.CreateChecked(testSteps) * DerivativeDenominator - TimeSinceLastIncrement);
+                return new(TimeUntilTick(testSteps));
             }
-            //We rounded down, so we need to go one more
-            return new(T.CreateChecked(testSteps) * DerivativeDenominator + 
-                DerivativeDenominator - TimeSinceLastIncrement); //This part is to get to the next tick forward.
+            //We rounded down, so we need to go one more to get to the next tick forward.
+            return new(TimeUntilTick(testSteps + M.One));
         }
         /// <summary>
         /// Almost the same as ThresholdReach, but with a few differences:
@@ -139,7 +226,7 @@ namespace Meters
             {
                 // Already at the threshold. The "pass" is the next tick where it leaves,
                 // if the meter is moving. If not moving, base handles it (returns Never).
-                return new(DerivativeDenominator - TimeSinceLastIncrement);
+                return new(TimeUntilTick(M.One));
             }
             // The reach tick landed exactly if distanceToMake is an exact multiple of Derivative.
             // (This is the same condition that ThresholdReach checks internally as afterSteps == 0.)
@@ -147,7 +234,7 @@ namespace Meters
             if (M.IsZero(remainder))
             {
                 // Exact landing: pass is one tick later.
-                return new(reach.Time + DerivativeDenominator);
+                return new(TimeUntilTick(distanceToMake / Derivative + M.One));
             }
             // Skipped over: pass == reach.
             return reach;
