@@ -81,6 +81,11 @@ namespace Meters
         /// <returns>Never if we aren't there or 0 if we are</returns>
         public override TimeOrNever<T> ThresholdReach(M threshold, bool allowNegative)
         {
+            if (IsOutsideRange(threshold))
+            {
+                //The meter stops at its minimum and maximum, so it can never get there
+                return new(true);
+            }
             if (threshold==CurrentValue)
             {
                 return new(false); //We don't care if we instantly crossed it, we are at the threshold right now (so we "reached" it)
@@ -95,6 +100,11 @@ namespace Meters
         /// <returns>0 if we did instantly cross, Never otherwise</returns>
         public override TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative)
         {
+            if (IsOutsideRange(threshold))
+            {
+                //The meter stops at its minimum and maximum, so it can never get there
+                return new(true);
+            }
             return new(!DidInstantlyCross(threshold,false));
         }
         public override object Clone(CloneContext context)

@@ -91,6 +91,17 @@ namespace Meters
         /// <returns>The time at which the meter will pass the threshold or Never if it won't. 0 if already there and the meter is moving (or next tick if discrete)</returns>
         public abstract TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative);
         /// <summary>
+        /// Is this value somewhere the meter can never be, since it is below the minimum or above the maximum?
+        /// ThresholdReach and ThresholdPass give Never for these, however fast the meter is heading that way.
+        /// A value exactly on the minimum or maximum is not outside, and can be reached.
+        /// </summary>
+        /// <param name="value">The value to check</param>
+        /// <returns>True if the value is outside the range of the meter as it is now</returns>
+        protected bool IsOutsideRange(M value)
+        {
+            return value < MinValue || value > MaxValue;
+        }
+        /// <summary>
         /// Did the Instant Change move it past this threshold?
         /// </summary>
         /// <remarks>Note that this will only happen if at exactly that point since advancing clears the last instant transition</remarks>

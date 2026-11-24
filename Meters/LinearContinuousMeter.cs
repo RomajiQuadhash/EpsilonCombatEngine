@@ -56,6 +56,11 @@ namespace Meters
         /// <returns>The time at which the meter will reach the threshold or Never if it won't. 0 if already there</returns>
         public override TimeOrNever<T> ThresholdReach(M threshold, bool allowNegative)
         {
+            if (IsOutsideRange(threshold))
+            {
+                //The meter stops at its minimum and maximum, so it can never get there
+                return new(true);
+            }
             if (M.IsZero(Derivative))
             {
                 return base.ThresholdReach(threshold, allowNegative);
@@ -86,6 +91,11 @@ namespace Meters
         /// <returns>The time at which the meter will pass the threshold or Never if it won't.</returns>
         public override TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative)
         {
+            if (IsOutsideRange(threshold))
+            {
+                //The meter stops at its minimum and maximum, so it can never get there
+                return new(true);
+            }
             if (M.IsZero(Derivative))
                 return base.ThresholdPass(threshold, allowNegative);
             return ThresholdReach(threshold, allowNegative);
