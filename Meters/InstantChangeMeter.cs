@@ -151,8 +151,12 @@ namespace Meters
             }
             if (allowClamping)
             {
-                _currentValue = newMin;
+                //Being pushed up to the new minimum is an instant change like any other, so it is recorded and announced as one
+                M beforeState = CurrentValue;
                 _minValue = newMin;
+                _instantChange += newMin - beforeState;
+                _currentValue = newMin;
+                RaiseInstantChangeEvt(beforeState, _currentValue);
                 return true;
             }
             //We'd have to clamp and we're not allowed to, just return false
@@ -178,8 +182,12 @@ namespace Meters
             }
             if (allowClamping)
             {
-                _currentValue = newMax;
+                //Being pushed down to the new maximum is an instant change like any other, so it is recorded and announced as one
+                M beforeState = CurrentValue;
                 _maxValue = newMax;
+                _instantChange += newMax - beforeState;
+                _currentValue = newMax;
+                RaiseInstantChangeEvt(beforeState, _currentValue);
                 return true;
             }
             //Have to clamp to set it but we're not allowed to, just return false
