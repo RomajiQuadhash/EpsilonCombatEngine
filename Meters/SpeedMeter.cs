@@ -35,6 +35,18 @@ namespace Meters
             SpeedAggregator.Meters.Add(this); //In order for speed to work, all speeds must be aggregated.
         }
         /// <summary>
+        /// Clone constructor: the same as the normal one, but takes the UUID so it is set before the meter adds itself to the aggregator.
+        /// The aggregator keeps its meters in a set that finds them by UUID, so changing the UUID after joining would leave the meter filed in the wrong place,
+        /// and the aggregator's own clone would then add it a second time.
+        /// </summary>
+        protected SpeedMeter(Timeline<T> timeline, int baseStat, Rational<long> minValue, Rational<long> maxValue, MaxStatAggregator<T, SpeedMeter<T>> aggregator, int uuid)
+            : base(timeline, baseStat, minValue, maxValue)
+        {
+            UUID = uuid;
+            SpeedAggregator = aggregator;
+            SpeedAggregator.Meters.Add(this);
+        }
+        /// <summary>
         /// How many times larger than the delay at max speed can the delay be? 
         /// </summary>
         public static readonly Rational<long> MaxDelayMagnitude = new(3, 1); //BATTLE TUNING PROPERTY
@@ -71,13 +83,12 @@ namespace Meters
                 }
             }
             //Okay so at this point, we have everything needed for the constructor
-            SpeedMeter<T> clone = new(owningTimelineClone, BaseStat, MinValue, MaxValue, aggregatorClone);
+            SpeedMeter<T> clone = new(owningTimelineClone, BaseStat, MinValue, MaxValue, aggregatorClone, UUID);
             context.Register(this, clone);
 
             //Update to match.
             clone._currentValue = CurrentValue - InstantChange;
             clone.AddInstantChange(InstantChange); //Set instant change and bring CurrentValue back to where it is here
-            clone.UUID = UUID;
             return clone;
         }
     }
