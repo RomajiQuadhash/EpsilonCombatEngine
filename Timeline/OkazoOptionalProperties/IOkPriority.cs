@@ -79,6 +79,9 @@ namespace Timeline.OkazoOptionalProperties
         MeterLimit, //This meter is about to pass the max or minimum value (excluding minimum for HP). Stop it from crossing the limit before anything else happens
         MeterTriggerInstant,
         MeterTriggerProgressive, //"Progressive" means the meter change occurs over time, so it won't be ever "overshot" like instant effects.
+        //A meter adjusting its own rate (for example, starting or ending a correction for rounding). Not caused by any action.
+        //After limits and triggers, so a trigger caused by the last tick still sees the rate that caused it.
+        MeterBookkeeping,
         //Changes after limits and triggers, since it's possible for a limit or trigger to prevent some or all of the change from occurring,
         //and we want that to be reflected in the timeline.
         InstantMeterChange,
