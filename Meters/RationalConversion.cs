@@ -83,7 +83,16 @@ namespace Meters
             {
                 return (TNum)(object)value;
             }
-            TNum candidate = TNum.CreateChecked(value.Numerator) / TNum.CreateChecked(value.Denominator);
+            TNum candidate;
+            if (TNum.One / (TNum.One + TNum.One) == TNum.Zero)
+            {
+                //Integer type. Divide first, since the numerator alone can be too big for the type even when the answer fits.
+                candidate = TNum.CreateChecked(value.Numerator / value.Denominator);
+            }
+            else
+            {
+                candidate = TNum.CreateChecked(value.Numerator) / TNum.CreateChecked(value.Denominator);
+            }
             if (rounding == FractionRounding.Closest)
             {
                 return candidate;
