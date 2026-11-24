@@ -292,6 +292,16 @@ namespace Meters
             return true;
         }
         /// <summary>
+        /// Changes how much the tick in progress (and every later one) will add, without restarting that tick.
+        /// Nothing spills over, since the tick still lands when it was going to.
+        /// </summary>
+        /// <param name="newDerivative">Derivative (how much per tick)</param>
+        /// <remarks>If the derivative is currently 0 there is no tick in progress to keep, so use SetDerivative instead</remarks>
+        protected void SetDerivativeKeepingPhase(M newDerivative)
+        {
+            _derivative = newDerivative;
+        }
+        /// <summary>
         /// Sets TimeSinceLastIncrement in a safe way. It is protected since you shouldn't be doing this if you're not doing something like cloning
         /// </summary>
         /// <param name="newTimeSinceLastIncrement">What to set the time to. Must be in [0,DerivativeDenominator)</param>
