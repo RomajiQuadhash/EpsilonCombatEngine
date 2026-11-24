@@ -188,18 +188,16 @@ namespace Meters
             }
             M testSteps = distanceToMake / Derivative;
             M afterSteps = distanceToMake - testSteps * Derivative;
-            if (M.Sign(afterSteps) * M.Sign(Derivative) < 0)
+            //The tick that reaches the threshold is the first one that makes up the whole distance, so the division rounded up.
+            //testSteps is that division rounded toward zero instead, which is only different when the threshold is ahead and isn't landed on exactly.
+            if (M.Sign(afterSteps) * M.Sign(Derivative) > 0)
             {
-                //If the sign product is negative, then we rounded towards 0, so the soonest before another change is one less
-                return new(TimeUntilTick(testSteps - M.One));
+                //The threshold is ahead and testSteps ticks fall short of it, so it takes one more.
+                return new(TimeUntilTick(testSteps + M.One));
             }
-            if (M.IsZero(afterSteps))
-            {
-                //Exactly on the money
-                return new(TimeUntilTick(testSteps));
-            }
-            //We rounded down, so we need to go one more to get to the next tick forward.
-            return new(TimeUntilTick(testSteps + M.One));
+            //Either exactly on the money, or the threshold is behind us (only when allowing negative).
+            //Behind us, rounding toward zero already is rounding up: with 97 -> 102 past 100, the tick that just landed (0) is the one that reached it.
+            return new(TimeUntilTick(testSteps));
         }
         /// <summary>
         /// Almost the same as ThresholdReach, but with a few differences:
