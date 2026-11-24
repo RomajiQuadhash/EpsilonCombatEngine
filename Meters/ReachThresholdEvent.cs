@@ -155,6 +155,16 @@ namespace Meters
                 //If it is going up, it can't cross through going down
                 return new(true);
             }
+            if (Direction != ThresholdDirection.Both && M.IsZero(OwningMeter.Derivative) && OwningMeter.CurrentValue != ThresholdPoint)
+            {
+                //A meter that isn't changing only reaches a threshold it isn't sitting on by jumping over it,
+                //and the meter reports that whichever way the jump went. It only counts here if it went the right way.
+                int jumpDirection = M.Sign(OwningMeter.InstantChange);
+                if ((jumpDirection < 0 && Direction == ThresholdDirection.Up) || (jumpDirection > 0 && Direction == ThresholdDirection.Down))
+                {
+                    return new(true);
+                }
+            }
             return OwningMeter.ThresholdReach(ThresholdPoint, _allowNegative);
         }
         protected override void OnInstantChange(object sender, M before, M after)
