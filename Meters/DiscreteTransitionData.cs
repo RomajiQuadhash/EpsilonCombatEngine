@@ -65,7 +65,8 @@ namespace Meters
                 if (other.ProgressiveChange == M.Zero)
                 {
                     //This isn't perfect because we lose the distinction between true instant changes and ticks
-                    return base.CompareTo(other);
+                    //It can't go through base.CompareTo, since that sees two different kinds and hands the question straight back here, forever.
+                    return CompareByCrossing(other);
                 }
                 throw new InvalidOperationException($"{other.GetType().Name} is using an integer type, has a progressive change, but is not using {nameof(DiscreteTransitionData<T,M>)}. This is because you're using the wrong event type, likely because you're using the wrong meter type.");
             }

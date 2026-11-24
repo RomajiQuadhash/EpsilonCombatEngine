@@ -99,7 +99,16 @@ namespace Timeline.OkazoOptionalProperties
             {
                 return -other.CompareTo(this); //Try the other way around. (it will likely throw with a more relevant error message)
             }
-
+            return CompareByCrossing(other);
+        }
+        /// <summary>
+        /// The ordinary rules for which crossing comes first, without checking that both are the same kind of TransitionData.
+        /// A subclass that is able to compare itself against a different kind uses this for that, since CompareTo would just hand the question back to it.
+        /// </summary>
+        /// <param name="other">The other TransitionData. Only what every TransitionData has is looked at</param>
+        /// <returns>1 if this should come after other, -1 if this should come before other, and 0 if inconclusive</returns>
+        protected int CompareByCrossing(TransitionData<T> other)
+        {
             //First, prioritize crossings that overshot the threshold if the other didn't
             if (After==T.Zero && other.After > T.Zero)
             {
