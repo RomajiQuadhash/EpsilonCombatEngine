@@ -106,7 +106,8 @@ namespace Meters
         /// <summary>
         /// True once the change has been removed again. After that it is off the timeline and does nothing more.
         /// </summary>
-        public bool IsFinished { get; private set; }
+        public override bool IsFinished => _isFinished;
+        private bool _isFinished;
 
         public override void OnAdvance(object? sender, T timeElapsed)
         {
@@ -129,7 +130,7 @@ namespace Meters
         /// </summary>
         public sealed override void TriggerWhenRemove()
         {
-            IsFinished = true;
+            _isFinished = true;
             RemoveChange();
         }
         /// <summary>
@@ -178,7 +179,7 @@ namespace Meters
             clone.HaltsInstantAction = HaltsInstantAction;
             clone.LifeCyclePhase = LifeCyclePhase;
             clone.TimeToEvent = TimeToEvent;
-            clone.IsFinished = IsFinished;
+            clone._isFinished = IsFinished;
             if (IsFinished)
             {
                 //A finished one stopped listening to the timeline, and making the clone started it listening again.

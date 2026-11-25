@@ -13,7 +13,7 @@ namespace Meters
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     /// <typeparam name="M">The numeric type used for the affected meter</typeparam>
     /// <remarks>Made by Claude, approved by Romaji</remarks>
-    public class InstantChangeEvent<T, M> : Okazo<T>, IOkPriority where T : INumber<T> where M : INumber<M>
+    public class InstantChangeEvent<T, M> : Okazo<T>, IOkPriority, IMeterChangeEvent<T, M> where T : INumber<T> where M : INumber<M>
     {
         /// <param name="meter">The meter to change</param>
         /// <param name="change">How much to add to the meter. Negative to take away</param>
@@ -34,6 +34,8 @@ namespace Meters
         /// The meter this changes.
         /// </summary>
         public InstantChangeMeter<T, M> MeterAppliedTo { get; }
+        AbstractMeter<T, M> IMeterChangeEvent<T, M>.MeterAppliedTo => MeterAppliedTo;
+        public Okazo<T> AsOkazo => this;
         /// <summary>
         /// How much this tries to add to the meter.
         /// </summary>

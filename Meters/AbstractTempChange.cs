@@ -17,7 +17,7 @@ namespace Meters
     /// <remarks>Note that as an abstract class, this doesn't actually do those things and only exists to plan around</remarks>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
     /// <typeparam name="M">The numeric type used for the affected meter</typeparam>
-    public abstract class AbstractTempChange<T, M>:Okazo<T>,IOkPriority where T : INumber<T> where M : INumber<M>
+    public abstract class AbstractTempChange<T, M>:Okazo<T>,IOkPriority,IMeterChangeEvent<T, M> where T : INumber<T> where M : INumber<M>
     {
         //Owners.
         public abstract Timeline<T> OwningTimeline { get; }
@@ -38,6 +38,8 @@ namespace Meters
         /// </summary>
         public ApplyOrRemove LifeCyclePhase { get; set; }
 
+        public virtual bool IsFinished { get; protected set; }=false;
+        public Okazo<T> AsOkazo => this;
         /// <summary>
         /// Checks if the priority is a recommended priority for a temporary change.
         /// If you're consistently making events where this value is false, consider if it should be a temp change
@@ -90,6 +92,7 @@ namespace Meters
             {
                 OwningTimeline.Advance -= OnAdvance;
                 TriggerWhenRemove();
+                IsFinished = true;
             }
         }
         /// <summary>
