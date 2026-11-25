@@ -17,5 +17,10 @@ namespace CoreMetrics
         /// How many times longer than at the highest speed a delay can get, however slow the combatant is. Read by SpeedMeter.
         /// </summary>
         public static readonly Rational<long> MaxDelayMagnitude = new(3, 1);
+        /// <summary>
+        /// The lowest that Defense can count as, so that damage can't explode as a debuffed Defense gets close to 0. Read by HealthMeter.
+        /// Placeholder: the design hasn't chosen this value yet.
+        /// </summary>
+        public static readonly Rational<long> MinDefense = new(1, 1);
     }
 }

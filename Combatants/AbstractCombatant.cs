@@ -21,7 +21,7 @@ namespace Combatants
         /// What the combatant's health is. Also includes the combatant's max and min health (min only not zero if the combatant is bleeding).
         /// </summary>
         /// <remarks>Should be a type designed to take changes over time well.</remarks>
-        public abstract required AbstractMeter<T,int> HealthMeter { get; set; }
+        public abstract required HealthMeter<T> HealthMeter { get; set; }
         /// <summary>
         /// Shared across all combatants in a combat, holds who has the next turn
         /// </summary>
