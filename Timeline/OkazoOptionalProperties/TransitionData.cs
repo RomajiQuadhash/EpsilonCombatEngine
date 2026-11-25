@@ -24,13 +24,13 @@ namespace Timeline.OkazoOptionalProperties
         /// If it is negative, this is the amount behind the threshold the meter was before crossing the threshold.
         /// Not scaled down by the range, so - range is going from one end of the range to the other.
         /// </summary>
-        public T Before { get; private set; }
+        public T Before { get; protected set; }
         /// <summary>
         /// The value after crossing the threshold. Always >=0, with 0 meaning no instant change.
         /// If it is positive, this is the amount past the threshold the meter was after crossing the threshold.
         /// Not scaled down by the range so range is the max value and a range worth of overshoot.
         /// </summary>
-        public T After { get; private set; }
+        public T After { get; protected set; }
         /// <summary>
         /// What the progressive change of the meter was at the time of crossing the threshold, not scaled down by the range.
         /// Usually positive, but could be negative if an instant change went in the opposite direction of the progressive change.
@@ -48,8 +48,7 @@ namespace Timeline.OkazoOptionalProperties
         /// <param name="progressiveChange">The progressive change at the time of crossing the threshold</param>
         /// <param name="range">The range of the meter</param>
         /// <param name="threshold">The threshold value</param>
-        /// <exception cref="ArgumentException">If the range is less than or equal to zero</exception>
-        /// <exception cref="InvalidOperationException">If the after value didn't cross or reach the threshold</exception>
+        /// <exception cref="ArgumentException">If the range is less than or equal to zero or if the after value didn't cross or reach the threshold</exception>
         public TransitionData(T instantChange, T after, T progressiveChange,T range,T threshold)
         {
             if (range <= T.Zero)
@@ -61,6 +60,10 @@ namespace Timeline.OkazoOptionalProperties
 
             if (instantChange == T.Zero)
             {
+                if (progressiveChange == T.Zero)
+                {
+                    throw new ArgumentException("There was no change, so no transition. TransitionData shouldn't exist then");
+                }
                 //No instant change, so just absolute value the progressive change and scale by the range.
                 ProgressiveChange = T.Abs(progressiveChange);
                 Before=T.Zero;
@@ -77,17 +80,35 @@ namespace Timeline.OkazoOptionalProperties
             }
             if (after<threshold) //Note that instantChange is guaranteed to be positive here and in the same direction as the overall change, which is why we can just check if after<threshold to see if it crossed the threshold.
             {
-                throw new InvalidOperationException("After value didn't cross the threshold");
+                throw new ArgumentException("After value didn't cross the threshold");
             }
             After = (after-threshold);
             Before = After-(instantChange);
             ProgressiveChange = progressiveChange;
         }
-
-        public int CompareTo(TransitionData<T>? other)
+        /// <summary>
+        /// The main method that should be overridden in any subclass.
+        /// </summary>
+        /// <param name="other">The other TransitionData</param>
+        /// <returns>1 if this should come after other, -1 if this should come before other, and 0 if inconclusive</returns>
+        public virtual int CompareTo(TransitionData<T>? other)
         {
             ArgumentNullException.ThrowIfNull(other);
-            
+
+            if (other.GetType()!=GetType())
+            {
+                return -other.CompareTo(this); //Try the other way around. (it will likely throw with a more relevant error message)
+            }
+            return CompareByCrossing(other);
+        }
+        /// <summary>
+        /// The ordinary rules for which crossing comes first, without checking that both are the same kind of TransitionData.
+        /// A subclass that is able to compare itself against a different kind uses this for that, since CompareTo would just hand the question back to it.
+        /// </summary>
+        /// <param name="other">The other TransitionData. Only what every TransitionData has is looked at</param>
+        /// <returns>1 if this should come after other, -1 if this should come before other, and 0 if inconclusive</returns>
+        protected int CompareByCrossing(TransitionData<T> other)
+        {
             //First, prioritize crossings that overshot the threshold if the other didn't
             if (After==T.Zero && other.After > T.Zero)
             {

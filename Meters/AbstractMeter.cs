@@ -12,18 +12,17 @@ namespace Meters
     /// <summary>
     /// An abstract placeholder for meters that track a numeric value over time.
     /// Examples might be health, mana, or a vibe meter.
-    /// Unlike a Counter, we don't need the time and metric types to be the same.
+    /// Unlike a Counter, we don't need the time and meter types to be the same.
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric</typeparam>
-    public abstract class AbstractMeter<T, M> : IAdvanceable<T>,IMeter<T>,ICombatCloneable where T : INumber<T> where M : INumber<M>
+    /// <typeparam name="M">The numeric type used for the meter's value</typeparam>
+    public abstract class AbstractMeter<T, M> : IAdvanceable<T>, IMeter<T>, ICombatCloneable, IEquatable<AbstractMeter<T,M>> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>
         /// The timeline this meter belongs to. Should NEVER change, since a timeline should exist for the entire lifetime of a battle,
         /// and all meters should be destroyed when the battle ends.
-        /// TODO: see if I can make this set once only.
         /// </summary>
-        public required Timeline<T> OwningTimeline { get; set; }
+        public abstract Timeline<T> OwningTimeline { get; }
         /// <summary>
         /// Note that there might be sub-details if say, M is a discrete type.
         /// You should use this for calculations though.
@@ -48,34 +47,118 @@ namespace Meters
         //We need to know the min and max values of the meter, since it is needed for threshold events and to know if the meter is at a limit.
         public abstract M MinValue { get; }
         public abstract M MaxValue { get; }
+
+        /// <summary>
+        /// How to tell two meters apart from each other
+        /// </summary>
+        public int UUID { get; set; } = Guid.NewGuid().GetHashCode();
+
+        /// <summary>
+        /// UUID and type based equality. Used for hashing so the mutable properties are ignored
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public bool Equals(AbstractMeter<T, M>? other) => other is not null && other.GetType() == GetType() && other.UUID == UUID;
+        public override bool Equals(object? obj) => Equals(obj as AbstractMeter<T, M>);
+        public override int GetHashCode() => HashCode.Combine(GetType(), UUID);
+
         /// <summary>
         /// The range is more useful for making transition data, so we provide it here for convenience. 
         /// It also is NOT virtual, since increasing the range should be done by changing the min and max values to set how it should expand.
         /// </summary>
         public M Range => MaxValue - MinValue;
         public abstract void OnAdvance(object? sender, T timeElapsed); //For a simple meter, this is really simple.
-        //But, I'm not going to bake that in at this stage, given I'm not coding anything at this stage
 
         /// <summary>
-        /// Returns, given current properties, the time at which the meter will touch the specified threshold.
+        /// Returns, given current properties, the time at which the meter will reach the specified threshold.
         /// Note that this is a prediction based on current properties.
-        /// If M is a discrete type, this is the earliest time at which the meter will be equal to the threshold.
+        /// If M is a discrete type, this is the first time at which the meter is at or past the threshold
+        /// in the direction of movement, i.e., the first tick whose value reaches or crosses the threshold,
+        /// not necessarily a tick whose value equals it exactly
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to reach</param>
-        /// <param name="allowNegative">If true, will return the earliest even if it is in the past. If false, if the only transition(s) are in the past, will return Never. Otherwise, the first one at or equal to time 0</param>
-        /// <returns>The time at which the meter will touch the threshold or Never if it won't. 0 if already there</returns>
-        public abstract TimeOrNever<T> ThresholdTouch(M threshold,bool allowNegative);
+        /// <param name="allowNegative">If true, will return the first (without ticking again) even if it is in the past. 
+        /// If false, if the only transition(s) are in the past, will return Never. Otherwise, the first one at or equal to time 0</param>
+        /// <returns>The time at which the meter will reach the threshold or Never if it won't. 0 if already there</returns>
+        public abstract TimeOrNever<T> ThresholdReach(M threshold,bool allowNegative);
         /// <summary>
-        /// Almost the same as ThresholdTouch, but with a few differences:
+        /// Almost the same as ThresholdReach, but with a few differences:
         /// 1. If the meter isn't moving, it will return Never instead of 0 if the meter is already at the threshold.
-        /// 2. If M is a discrete type, this is the latest time at which the meter will be equal to the threshold, rather than the earliest.
+        /// 2. If M is a discrete type and a tick lands exactly on the threshold, it will be the next tick
         /// </summary>
         /// <param name="threshold">The value to see how long it will take to pass</param>
         /// <param name="allowNegative">If true, will return the earliest even if it is in the past. If false, if the only transition(s) are in the past, will return Never. Otherwise, the first one at or equal to time 0</param>
-        /// <returns>The time at which the meter will cross the threshold or Never if it won't. 0 if already there and the threshold is moving</returns>
-        public abstract TimeOrNever<T> ThresholdCross(M threshold, bool allowNegative);
+        /// <returns>The time at which the meter will pass the threshold or Never if it won't. 0 if already there and the meter is moving (or next tick if discrete)</returns>
+        public abstract TimeOrNever<T> ThresholdPass(M threshold, bool allowNegative);
+        /// <summary>
+        /// Is this value somewhere the meter can never be, since it is below the minimum or above the maximum?
+        /// ThresholdReach and ThresholdPass give Never for these, however fast the meter is heading that way.
+        /// A value exactly on the minimum or maximum is not outside, and can be reached.
+        /// </summary>
+        /// <param name="value">The value to check</param>
+        /// <returns>True if the value is outside the range of the meter as it is now</returns>
+        protected bool IsOutsideRange(M value)
+        {
+            return value < MinValue || value > MaxValue;
+        }
+        /// <summary>
+        /// Did the Instant Change move it past this threshold?
+        /// </summary>
+        /// <remarks>Note that this will only happen if at exactly that point since advancing clears the last instant transition</remarks>
+        /// <param name="threshold">The threshold we want to see if we passed</param>
+        /// <param name="includeTouch">If we should count where the before or after exactly includes the threshold. Not both though, since no crossing occurs</param>
+        /// <returns>True if it was on one side before the instant change and then the other after</returns>
+        public bool DidInstantlyCross(M threshold,bool includeTouch) //We can implement this here since instant changes are a value
+        {
+            if (M.IsZero(InstantChange))
+            {
+                return false; //Can't cross if we aren't moving
+            }
+            int thresholdComparison = threshold.CompareTo(CurrentValue) * threshold.CompareTo(CurrentValue - InstantChange);
+            if (thresholdComparison == 0)
+            {
+                return includeTouch; //one of the comparisons was 0, meaning that we touched at one endpoint, so true if allowing touch
+            }
+            return thresholdComparison < 0; //One of before or after is on the other side of the other
+        }
         public abstract object Clone(CloneContext context);
-
+        /// <summary>
+        /// Event raised when there's an Instant Change.
+        /// </summary>
+        /// <remarks>Automatically subscribed to by Threshold Events upon their creation, so no Rewire</remarks>
+        public event InstantChange<M>? InstantChangeEvt;
+        /// <summary>
+        /// Event raised when there's a change caused by OnAdvance
+        /// </summary>
+        /// <remarks>Automatically subscribed to by Threshold Events upon their creation, so no Rewire</remarks>
+        public event ContinuousChange<T, M>? ContinuousChangeEvt;
+        /// <summary>
+        /// Helper method for subclasses to mark to any subscribed events that there has been a change
+        /// </summary>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected void RaiseInstantChangeEvt(M before, M after)
+        {
+            if (before==after)
+            {
+                return;
+            }
+            InstantChangeEvt?.Invoke(this, before, after);
+        }
+        /// <summary>
+        /// Helper method for subclasses to indicate changes that occurred because of OnAdvance
+        /// </summary>
+        /// <param name="timeElapsed">How much time has the timeline advanced by?</param>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected void RaiseContinuousChangeEvt(T timeElapsed, M before, M after)
+        {
+            if (before == after)
+            {
+                return;
+            }
+            ContinuousChangeEvt?.Invoke(this, timeElapsed, before, after);
+        }
         //Note that there's no setters because that is specific to what the meter is holding and how it works.
         //These properties are for AbstractThresholdEvent to work with any kind of meter
     }

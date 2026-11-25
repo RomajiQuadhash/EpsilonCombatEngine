@@ -8,10 +8,10 @@ namespace Meters
     /// <summary>
     /// An abstract placeholder for events that are triggered by crossing a threshold.
     /// Examples might be hitting the top or bottom of the range (like a KO, death, or max health/MP)
-    /// or crossing a specific threshold (like getting a vibe meter to sufficently rage/focus to perform an action).
+    /// or crossing a specific threshold (like getting a vibe meter to sufficiently rage/focus to perform an action).
     /// </summary>
     /// <typeparam name="T">The numeric type used for the timeline</typeparam>
-    /// <typeparam name="M">The numeric type used for the metric</typeparam>
+    /// <typeparam name="M">The numeric type used for the associated meter</typeparam>
     public abstract class AbstractThresholdEvent<T,M> : Okazo<T>, IOkPriority,IOkTransition<M> where T : INumber<T> where M : INumber<M>
     {
         /// <summary>
@@ -22,15 +22,12 @@ namespace Meters
         //So, no need to restrict the priority to a specific set of values, just use the general PriorityRank enum.
         public abstract PriorityRank? Priority { get; }
         /// <summary>
-        /// Note that if this event is never, this will throw an InvalidOperationException,
-        /// since we'll construct a TransitionData object with invalid data.
-        /// This is OK because a never event will never end up in OkazoComparitor.Compare
+        /// Note that if this is never, this will be never. If it hasn't actually happened yet, it might be inaccurate
         /// </summary>
-        /// <remarks>TODO: consider if we can just, implement this</remarks>
-        public abstract TransitionData<M> TransitionData { get; }
+        public abstract TransitionData<M>? TransitionData { get; }
         /// <summary>
         /// Explicitly settable, since we might want to disable an event without removing it immediately
-        /// (it will be removed when the timline is cleaned (Open and PostEffect when TakeSteps is called)
+        /// (it will be removed when the timeline is cleaned (Open and PostEffect when TakeSteps is called))
         /// </summary>
         public override bool CouldOccur { get; set; }
         /// <summary>
@@ -45,10 +42,46 @@ namespace Meters
         /// Used to compute the remaining time until the threshold event occurs.
         /// </summary>
         /// <returns>The remaining time until the threshold event occurs, or Never if it isn't predicted to occur</returns>
-        /// <remarks>Why not just call OwningMeter.ThresholdTouch or OwningMeter.ThresholdCross?
+        /// <remarks>Why not just call OwningMeter.ThresholdReach or OwningMeter.ThresholdPass?
         /// Well, which one is correct might depend of what the purpose of the threshold is, but there's another difficulty.
         /// We might want to call them with allowNegative=true sometimes, but usually with it false.
         /// </remarks>
-        internal abstract TimeOrNever<T> ComputeTimeRemaining();
+        protected abstract TimeOrNever<T> ComputeTimeRemaining();
+
+        /// <summary>
+        /// Which way do we care about crossing? If only one way, then crossing over and back undoes the change
+        /// </summary>
+        public ThresholdDirection Direction { get; set; } = ThresholdDirection.Both;
+        /// <summary>
+        /// The value this threshold is defined by. Almost always should be settable, if not, set should throw a helpful exception
+        /// </summary>
+        public abstract M ThresholdPoint { get; set; }
+
+        #region Subscriptions
+        /// <summary>
+        /// Called when an instant change occurs. Must be subscribed to in the constructor
+        /// </summary>
+        /// <param name="sender">Must be OwningMeter</param>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected abstract void OnInstantChange(object sender, M before, M after);
+        /// <summary>
+        /// Called when a meter finishes updating from OnAdvance.
+        /// </summary>
+        /// <param name="sender">Must be OwningMeter</param>
+        /// <param name="timeElapsed">How much time has the timeline advanced by?</param>
+        /// <param name="before">What the meter was before the change</param>
+        /// <param name="after">What the meter is after the change (should be the same as what it is now, but for completeness)</param>
+        protected abstract void OnContinuousChange(object sender, T timeElapsed, M before, M after);
+        #endregion
+    }
+    /// <summary>
+    /// Which way do we want the meter to care about crossing? If only one way, crossing the other direction is undone
+    /// </summary>
+    public enum ThresholdDirection
+    {
+        Both,
+        Up,
+        Down,
     }
 }

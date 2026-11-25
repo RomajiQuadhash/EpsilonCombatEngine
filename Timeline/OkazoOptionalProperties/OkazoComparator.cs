@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace Timeline.OkazoOptionalProperties
 {
-    internal static class OkazoComparitor<T> where T : INumber<T>
+    internal static class OkazoComparator<T> where T : INumber<T>
     {
         /// <summary>
         /// Tiebreaker comparator for Okazo<T> that tries to use optional properties to compare consistently
-        /// Should make sure that x!=y and that they both are occuring at the time before calling this.
+        /// Should make sure that x!=y and that they both are occurring at the time before calling this.
         /// </summary>
         /// <param name="x">The first event to consider</param>
         /// <param name="y">The second event to consider</param>
@@ -45,7 +45,25 @@ namespace Timeline.OkazoOptionalProperties
                 //Since we don't know the type at compile time, we have to use dynamic to call CompareTo.
                 dynamic xOk = x;
                 dynamic yOk = y;
-                ret = xOk.TransitionData.CompareTo(yOk.TransitionData);
+                if (xOk.TransitionData is null)
+                {
+                    if (yOk.TransitionData is not null)
+                    {
+                        ret = -1; //Y has more information than X, should come first
+                    }
+                }
+                else
+                {
+                    if (yOk.TransitionData is not null)
+                    {
+                        ret = xOk.TransitionData.CompareTo(yOk.TransitionData);
+                    }
+                    else
+                    {
+                        ret = 1; //X has more information than Y, should come first
+                    }
+                }
+                
                 if (ret != 0) return ret;
             }
             //Put new properties here.
