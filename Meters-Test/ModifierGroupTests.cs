@@ -1,3 +1,4 @@
+using CoreMetrics;
 using Meters;
 using Rationalz;
 namespace Meters_Test;
@@ -145,29 +146,129 @@ public class ModifierGroupTests
         Assert.Equal(new Rational<long>(2, 5), group.Sum);
         Assert.Equal(5, group.FastestTickRateAtMax);
     }
-    [Fact(DisplayName = "A group copied from another has the same modifiers under the same keys, and the two change separately afterwards")]
-    public void CopyFromMatchesAndThenIsSeparate()
+    [Fact(DisplayName = "A group made without a counter is group 0, and groups made with one counter each get their own number starting from 1")]
+    public void GroupsAreNumberedByTheirCounter()
+    {
+        ModifierGroupCounter counter = new();
+        ModifierGroup<int, int> alone = new();
+        ModifierGroup<int, int> first = new(counter);
+        ModifierGroup<int, int> second = new(counter);
+
+        Assert.Equal(0, alone.GroupNumber);
+        Assert.Equal(1, first.GroupNumber);
+        Assert.Equal(2, second.GroupNumber);
+        Assert.Equal(2, counter.GroupsMade);
+        Assert.Equal(new ModifierKey(0), alone.Add(new ModInstance<int, int>(1, 3)));
+        Assert.Equal(new ModifierKey(0, 1), first.Add(new ModInstance<int, int>(1, 3)));
+        Assert.Equal(new ModifierKey(0, 2), second.Add(new ModInstance<int, int>(1, 3)));
+    }
+    [Fact(DisplayName = "A key from one group does nothing on another group made with the same counter, even though both gave it as their first key")]
+    public void KeysFromAnotherGroupDoNothing()
+    {
+        ModifierGroupCounter counter = new();
+        ModifierGroup<int, int> first = new(counter);
+        ModifierGroup<int, int> second = new(counter);
+        ModifierKey fromFirst = first.Add(new ModInstance<int, int>(1, 3));
+        ModifierKey fromSecond = second.Add(new ModInstance<int, int>(-7, 2));
+
+        Assert.NotEqual(fromFirst, fromSecond);
+        Assert.False(second.Remove(fromFirst));
+        Assert.False(first.Replace(fromSecond, new ModInstance<int, int>(8, 2)));
+
+        Assert.Equal(new Rational<long>(1, 3), first.Sum);
+        Assert.Equal(new Rational<long>(-7, 2), second.Sum);
+        Assert.True(first.Remove(fromFirst));
+        Assert.True(second.Remove(fromSecond));
+    }
+    [Fact(DisplayName = "Cloned groups keep their numbers whatever order they are cloned in, without counting as new groups on the original's counter or its clone")]
+    public void ClonesKeepTheirGroupNumbers()
+    {
+        ModifierGroupCounter counter = new();
+        ModifierGroup<int, int> first = new(counter);
+        ModifierGroup<int, int> second = new(counter);
+        ModifierKey firstKey = first.Add(new ModInstance<int, int>(3, 5));
+        ModifierKey secondKey = second.Add(new ModInstance<int, int>(-7, 2));
+        CloneContext context = new();
+
+        //The other way round from how they were made
+        ModifierGroup<int, int> secondClone = context.GetOrClone(second);
+        ModifierGroup<int, int> firstClone = context.GetOrClone(first);
+        ModifierGroupCounter counterClone = context.GetOrClone(counter);
+
+        Assert.Equal(1, firstClone.GroupNumber);
+        Assert.Equal(2, secondClone.GroupNumber);
+        Assert.Equal(2, counter.GroupsMade);
+        Assert.Equal(2, counterClone.GroupsMade);
+        Assert.False(firstClone.Remove(secondKey));
+        Assert.True(firstClone.Remove(firstKey));
+        Assert.True(secondClone.Remove(secondKey));
+        Assert.Single(first.Modifiers);
+        Assert.Single(second.Modifiers);
+    }
+    [Fact(DisplayName = "A cloned counter carries on from the same count as its original, and neither changes the other")]
+    public void ClonedCounterCountsSeparately()
+    {
+        ModifierGroupCounter counter = new();
+        ModifierGroup<int, int> before = new(counter);
+        CloneContext context = new();
+
+        ModifierGroupCounter counterClone = context.GetOrClone(counter);
+
+        Assert.NotSame(counter, counterClone);
+        Assert.Same(counterClone, context.GetOrClone(counter));
+        ModifierGroup<int, int> onOriginal = new(counter);
+        ModifierGroup<int, int> onClone = new(counterClone);
+        ModifierGroup<int, int> anotherOnClone = new(counterClone);
+        Assert.Equal(2, onOriginal.GroupNumber);
+        Assert.Equal(2, onClone.GroupNumber);
+        Assert.Equal(3, anotherOnClone.GroupNumber);
+        Assert.Equal(2, counter.GroupsMade);
+        Assert.Equal(3, counterClone.GroupsMade);
+        Assert.Equal(1, before.GroupNumber);
+    }
+    [Fact(DisplayName = "A RateManagedMeter given a counter puts its group's number in its keys, and one given none uses group 0")]
+    public void MeterUsesTheCounterIfGiven()
+    {
+        Timeline.Timeline<int> timeline = new();
+        ModifierGroupCounter counter = new();
+        RateManagedMeter<int, int> plain = new(timeline, 0, -1000, 1000);
+        RateManagedMeter<int, int> first = new(timeline, 0, -1000, 1000, counter);
+        RateManagedMeter<int, int> second = new(timeline, 0, -1000, 1000, counter);
+
+        ModifierKey plainKey = plain.Add(new ModInstance<int, int>(1, 3));
+        ModifierKey firstKey = first.Add(new ModInstance<int, int>(1, 3));
+        ModifierKey secondKey = second.Add(new ModInstance<int, int>(1, 3));
+
+        Assert.Equal(new ModifierKey(0), plainKey);
+        Assert.Equal(new ModifierKey(0, 1), firstKey);
+        Assert.Equal(new ModifierKey(0, 2), secondKey);
+        Assert.False(second.Remove(firstKey));
+        Assert.True(first.Remove(firstKey));
+    }
+    [Fact(DisplayName = "A cloned group has the same modifiers under the same keys, is the one clone the context gives every time, and the two change separately afterwards")]
+    public void CloneMatchesAndThenIsSeparate()
     {
         ModifierGroup<int, int> original = new();
         ModifierKey kept = original.Add(new ModInstance<int, int>(3, 5));
-        ModifierKey removedFromCopy = original.Add(new ModInstance<int, int>(-7, 3));
-        ModifierGroup<int, int> copy = new();
-        copy.Add(new ModInstance<int, int>(100, 1)); //Copying replaces whatever was there
+        ModifierKey removedFromClone = original.Add(new ModInstance<int, int>(-7, 3));
+        CloneContext context = new();
 
-        copy.CopyFrom(original);
+        ModifierGroup<int, int> clone = context.GetOrClone(original);
 
-        Assert.Equal(original.Sum, copy.Sum);
-        Assert.Equal(original.MaxMagnitude, copy.MaxMagnitude);
-        Assert.Equal(original.FastestTickRateAtMax, copy.FastestTickRateAtMax);
-        Assert.Equal(new ModInstance<int, int>(3, 5), copy.Modifiers[kept]);
+        Assert.NotSame(original, clone);
+        Assert.Same(clone, context.GetOrClone(original));
+        Assert.Equal(original.Sum, clone.Sum);
+        Assert.Equal(original.MaxMagnitude, clone.MaxMagnitude);
+        Assert.Equal(original.FastestTickRateAtMax, clone.FastestTickRateAtMax);
+        Assert.Equal(new ModInstance<int, int>(3, 5), clone.Modifiers[kept]);
 
-        Assert.True(copy.Remove(removedFromCopy));
-        ModifierKey addedToCopy = copy.Add(new ModInstance<int, int>(1, 2));
+        Assert.True(clone.Remove(removedFromClone));
+        ModifierKey addedToClone = clone.Add(new ModInstance<int, int>(1, 2));
         ModifierKey addedToOriginal = original.Add(new ModInstance<int, int>(1, 4));
 
         Assert.Equal(3, original.Modifiers.Count);
-        Assert.Equal(2, copy.Modifiers.Count);
+        Assert.Equal(2, clone.Modifiers.Count);
         //Both carried on from the same point, so the next key each gives is the same one
-        Assert.Equal(addedToOriginal, addedToCopy);
+        Assert.Equal(addedToOriginal, addedToClone);
     }
 }

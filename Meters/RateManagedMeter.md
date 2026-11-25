@@ -76,8 +76,18 @@ The sources, their exact sum and the cached strongest source live in a `Modifier
 Three things follow:
 
 - **Changing how a group counts touches no source.** The sources stay as they were added, and the meter works out its rate again once. The rules below for a change partway through a tick apply as they do to any other change.
-- **A key belongs to the group that gave it.** Two groups can hand out the same key, so a subclass needs separate methods for each group.
-- **A subclass has to copy its own groups when it is cloned,** with `ModifierGroup.CopyFrom`.
+- **A key belongs to the group that gave it.** A subclass needs separate methods for each group, and it should make its groups with one `ModifierGroupCounter` so that a key handed to the wrong group's method finds nothing (below).
+- **A subclass has to clone its own groups when it is cloned,** by getting each one's clone from the clone context and handing it to its clone constructor. It never makes a new group for a clone.
+
+### Groups are numbered, and the number is in the key
+
+Every group counts its own keys from 0, so two groups both give "key 0" first. To keep a key from one group from matching a source in another, a `ModifierKey` also carries the number of the group that gave it. The numbers come from a `ModifierGroupCounter`: each group made with a counter takes the next number, starting at 1. A group made without one is group 0.
+
+A `RateManagedMeter` only takes a counter if it is given one. By itself it has one group, so there is nothing to tell apart and group 0 is fine. A meter with more than one group requires a counter and makes all its groups with it. Sharing one counter across a whole combat also tells apart the keys of different meters.
+
+*Why not one static count for every key:* a clone is used to try out what would happen, and that adds sources. With a shared static count, how many times that had been done would change which keys the real combat gets next. The counter is an object that is cloned with the combat instead, so a clone carries on from the same count as its original and neither can change the other.
+
+*Why a group is cloned and not made again:* the clone's group has to answer to the same keys as the original's. If a cloned meter made new groups from the cloned counter, which number each got would depend on the order the meters happened to be cloned in. So a `ModifierGroup` clones itself through the clone context, keeping its number and taking none from any counter, and the meter's clone constructor is handed that clone. The cloned counter's count stays the same as the original's.
 
 ## When the sources change
 
@@ -285,7 +295,7 @@ A subclass with groups of its own clears those before calling it. Whatever they 
 
 Things specific to this meter:
 
-- **It takes its spillover, events and tick card from the clone context,** and makes none of its own. Whichever of them the timeline has already cloned are found there. If the clone made new ones, there would be two spillover meters and the events would be watching the wrong one.
+- **It takes its spillover, its group of sources, its events and its tick card from the clone context,** and makes none of its own. Whichever of them the timeline has already cloned are found there. If the clone made new ones, there would be two spillover meters and the events would be watching the wrong one.
 - **It doesn't listen to its events.** Rewiring the original's events does that, as for anything else that listens to an event.
 - **It registers itself before cloning the tick card,** since the card's face is the meter.
 - **It moves its spillover after itself in the advance order.** The meter has to advance before its spillover, and if the timeline cloned an event first, the spillover's clone was made first.

@@ -23,7 +23,7 @@ namespace Meters
         /// <summary>
         /// The bookkeeping for the modifiers that Add, Remove and Replace work on: which ones there are, their exact total, and which is the strongest.
         /// </summary>
-        private readonly ModifierGroup<T, M> _sources = new();
+        private readonly ModifierGroup<T, M> _sources;
         /// <summary>
         /// The same group that Add, Remove and Replace work on, for a subclass that has more groups of its own
         /// and needs this one's total and strongest modifier to put together with theirs.
@@ -143,13 +143,25 @@ namespace Meters
         private Card<T, RateManagedMeter<T, M>>? _tickCard;
         #endregion
 
-        public RateManagedMeter(Timeline<T> owningTimeline,M initialValue, M minValue, M maxValue):base(owningTimeline,initialValue,minValue,maxValue)
+        /// <summary>
+        /// Creates a meter with nothing changing it yet.
+        /// </summary>
+        /// <param name="owningTimeline">The timeline that owns this meter</param>
+        /// <param name="initialValue">The value that the meter starts at</param>
+        /// <param name="minValue">Minimum of the meter</param>
+        /// <param name="maxValue">Maximum of the meter</param>
+        /// <param name="groupCounter">
+        /// What numbers this meter's group of modifiers, so its keys can't be mistaken for those of another group made with the same counter.
+        /// Leave it out if nothing needs telling apart, and the keys are in group 0.
+        /// </param>
+        public RateManagedMeter(Timeline<T> owningTimeline,M initialValue, M minValue, M maxValue, ModifierGroupCounter? groupCounter = null):base(owningTimeline,initialValue,minValue,maxValue)
         {
+            _sources = groupCounter is null ? new() : new(groupCounter);
             _spilloverFraction = new(owningTimeline, Rational<long>.Zero, new Rational<long>(-SpilloverLimit), new Rational<long>(SpilloverLimit));
             PutLeapYearEventsOnTimeline();
         }
         /// <summary>
-        /// Clone constructor: for a meter whose spillover meter already exists.
+        /// Clone constructor: for a meter whose spillover meter and group of modifiers already exist.
         /// Unlike the normal constructor, it puts no leap year events on the timeline. Clone fills in everything else.
         /// </summary>
         /// <param name="owningTimeline">The timeline that owns this meter</param>
@@ -157,10 +169,12 @@ namespace Meters
         /// <param name="minValue">Minimum of the meter</param>
         /// <param name="maxValue">Maximum of the meter</param>
         /// <param name="spilloverFraction">The meter to use for the spillover. Must be on the same timeline</param>
-        protected RateManagedMeter(Timeline<T> owningTimeline, M initialValue, M minValue, M maxValue, LinearContinuousMeter<T, Rational<long>> spilloverFraction)
+        /// <param name="sources">The group of modifiers that Add, Remove and Replace work on</param>
+        protected RateManagedMeter(Timeline<T> owningTimeline, M initialValue, M minValue, M maxValue, LinearContinuousMeter<T, Rational<long>> spilloverFraction, ModifierGroup<T, M> sources)
             : base(owningTimeline, initialValue, minValue, maxValue)
         {
             _spilloverFraction = spilloverFraction;
+            _sources = sources;
         }
 
         #region Changing modifiers
@@ -926,7 +940,8 @@ namespace Meters
             //The spillover is an ordinary meter that knows nothing about this one, so it is safe to clone before this is registered.
             //If the timeline has already cloned one of the leap year events, this just finds the clone that made.
             LinearContinuousMeter<T, Rational<long>> spilloverClone = context.GetOrClone(_spilloverFraction);
-            RateManagedMeter<T, M> clone = CreateEmptyForClone(owningTimelineClone, spilloverClone, context);
+            //The group of modifiers is cloned, not made again, so it keeps its number and its keys whatever order things are cloned in.
+            RateManagedMeter<T, M> clone = CreateEmptyForClone(owningTimelineClone, spilloverClone, context.GetOrClone(_sources), context);
             context.Register(this, clone);
             //This comes after registering, since the tick card's face is this meter and cloning the card asks for this meter's clone.
             CopyPropertiesForClone(clone, context);
@@ -943,11 +958,12 @@ namespace Meters
         /// </summary>
         /// <param name="owningTimeline">The timeline that should own the clone</param>
         /// <param name="spilloverFraction">The clone of this meter's spillover meter, for the clone to use as its own</param>
+        /// <param name="sources">The clone of this meter's group of modifiers, for the clone to use as its own</param>
         /// <param name="context">The clone context, in case the subclass needs the clones of other objects to make itself</param>
-        protected virtual RateManagedMeter<T, M> CreateEmptyForClone(Timeline<T> owningTimeline, LinearContinuousMeter<T, Rational<long>> spilloverFraction, CloneContext context)
+        protected virtual RateManagedMeter<T, M> CreateEmptyForClone(Timeline<T> owningTimeline, LinearContinuousMeter<T, Rational<long>> spilloverFraction, ModifierGroup<T, M> sources, CloneContext context)
         {
             //Without the instant change, which CopyPropertiesForClone puts back so that the clone has it as an instant change too
-            return new(owningTimeline, CurrentValue - InstantChange, MinValue, MaxValue, spilloverFraction);
+            return new(owningTimeline, CurrentValue - InstantChange, MinValue, MaxValue, spilloverFraction, sources);
         }
         /// <summary>
         /// Fills in a clone to match this meter. Override this (but always call base.CopyPropertiesForClone) in subclasses to copy any additional properties.
@@ -959,9 +975,6 @@ namespace Meters
             clone.AddInstantChange(InstantChange); //Set instant change and bring CurrentValue back to where it is here
             clone.UUID = UUID;
             clone.CopyScheduleFrom(this);
-
-            //The modifiers. A ModInstance can't change, so both meters can refer to the same ones.
-            clone._sources.CopyFrom(_sources);
 
             //The events. Whichever of these the timeline has already cloned are in the context, and the rest are cloned now.
             clone._positiveLeapYearStart = _positiveLeapYearStart is null ? null : context.GetOrClone(_positiveLeapYearStart);

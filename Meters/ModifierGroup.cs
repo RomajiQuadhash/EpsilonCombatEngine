@@ -1,3 +1,4 @@
+using CoreMetrics;
 using Rationalz;
 using System.Numerics;
 
@@ -11,10 +12,29 @@ namespace Meters
     /// <remarks>Claude written, Romaji </remarks>
     /// <typeparam name="T">The time unit of the timeline</typeparam>
     /// <typeparam name="M">The numeric type the sources change</typeparam>
-    public class ModifierGroup<T, M> where T : INumber<T> where M : INumber<M>
+    public class ModifierGroup<T, M> : ICombatCloneable where T : INumber<T> where M : INumber<M>
     {
         private readonly Dictionary<ModifierKey, ModInstance<T, M>> _modifiers = [];
         private long _nextId;
+        /// <summary>
+        /// The number that is in every key this group gives out, which is what tells its keys apart from another group's.
+        /// 0 for a group made without a counter.
+        /// </summary>
+        public int GroupNumber { get; private set; }
+        /// <summary>
+        /// Makes a group with the number 0, for a group that is the only one its keys could be used with.
+        /// </summary>
+        public ModifierGroup()
+        {
+        }
+        /// <summary>
+        /// Makes a group with the next number from a counter, so its keys can't be mistaken for those of any other group made with that counter.
+        /// </summary>
+        /// <param name="counter">The counter shared by the groups that must be told apart</param>
+        public ModifierGroup(ModifierGroupCounter counter)
+        {
+            GroupNumber = counter.TakeNextGroupNumber();
+        }
         /// <summary>
         /// The modifiers in this group.
         /// Keys are unique identifiers this group gives the caller when they add a modifier, and can be used to remove or replace the modifier later.
@@ -44,7 +64,7 @@ namespace Meters
             Rational<long> newSum = RationalConversion.NarrowExact(
                 RationalConversion.Widen(Sum) + RationalConversion.Widen(modifier.Magnitude));
             //Everything that could throw has been done, so now it is safe to change things.
-            ModifierKey key = new(_nextId++);
+            ModifierKey key = new(_nextId++, GroupNumber);
             _modifiers.Add(key, modifier);
             Sum = newSum;
             NoteAdded(modifier);
@@ -104,21 +124,33 @@ namespace Meters
             FastestTickRateAtMax = T.One;
         }
         /// <summary>
-        /// Makes this group hold exactly what another one does, under the same keys. Only for cloning.
+        /// Clones this group: the same modifiers under the same keys, and the same group number, so every key that works on this group works on its clone.
         /// </summary>
-        /// <remarks>A ModInstance can't change, so both groups can refer to the same ones.</remarks>
-        /// <param name="original">The group to match</param>
-        public void CopyFrom(ModifierGroup<T, M> original)
+        /// <remarks>
+        /// The clone takes no number from any counter. It has this group's number whatever order the groups of a combat are cloned in,
+        /// so whoever owns a group gets its clone from the context instead of making a new group.
+        /// A ModInstance can't change, so both groups can refer to the same ones.
+        /// </remarks>
+        public object Clone(CloneContext context)
         {
-            _modifiers.Clear();
-            foreach (KeyValuePair<ModifierKey, ModInstance<T, M>> modifier in original._modifiers)
+            if (context.TryGet(this, out ModifierGroup<T, M> existingClone))
             {
-                _modifiers.Add(modifier.Key, modifier.Value);
+                return existingClone;
             }
-            _nextId = original._nextId;
-            Sum = original.Sum;
-            MaxMagnitude = original.MaxMagnitude;
-            FastestTickRateAtMax = original.FastestTickRateAtMax;
+            ModifierGroup<T, M> clone = new();
+            context.Register(this, clone);
+
+            //Now update this to match
+            foreach (KeyValuePair<ModifierKey, ModInstance<T, M>> modifier in _modifiers)
+            {
+                clone._modifiers.Add(modifier.Key, modifier.Value);
+            }
+            clone._nextId = _nextId;
+            clone.GroupNumber = GroupNumber;
+            clone.Sum = Sum;
+            clone.MaxMagnitude = MaxMagnitude;
+            clone.FastestTickRateAtMax = FastestTickRateAtMax;
+            return clone;
         }
         #region Strongest modifier tracking
         /// <summary>
@@ -179,5 +211,7 @@ namespace Meters
     /// <summary>
     /// Identifies one modifier in one ModifierGroup. Only a ModifierGroup makes these.
     /// </summary>
-    public readonly record struct ModifierKey(long Id);
+    /// <param name="Id">Which of the group's modifiers this is. A group never gives the same one twice</param>
+    /// <param name="Group">The number of the group that gave this key. A key only ever matches a modifier in a group with this number</param>
+    public readonly record struct ModifierKey(long Id, int Group = 0);
 }
