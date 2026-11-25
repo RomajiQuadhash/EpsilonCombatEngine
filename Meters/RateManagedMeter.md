@@ -237,7 +237,7 @@ The tick card should always stop the timeline at the right tick. If something el
 
 On a `double` timeline, adding the elapsed time to the tick's progress and taking the remainder can come out a hair to either side of a tick. So `LinearDiscreteMeter` has one method, `TimeUntilTick`, that every prediction of a tick's time comes from, and the advance compares the elapsed time against that same calculation. If they are equal it lands exactly on the tick.
 
-*Why:* subtracting a number from itself is always exactly 0, but only if both sides are worked out the same way. Before this, about 2.3% of random fractional cases missed their tick.
+*Why:* subtracting a number from itself is always exactly 0, but only if both sides are worked out the same way. Before this, about 2.3% of random floating point cases missed their tick.
 
 ## Cloning
 
@@ -263,7 +263,7 @@ Everything exact in this meter is a `Rational<long>`, and all conversions go thr
 
 ## Known limits
 
-- **Fractional timelines need kind values.** Whole numbers and fractions that share a binary grid (0.5, 0.25) are exact. Awkward ones can leave a threshold event a hair off zero, and it refuses to fire.
+- **Floating point timelines need kind values.** Whole numbers and fractions that share a binary grid (0.5, 0.25) are exact. Awkward ones can leave a threshold event a hair off zero, and it refuses to fire.
 - **The spillover's arithmetic isn't capped.** It is a plain `LinearContinuousMeter`. With kind values its denominators stay small.
 - **At the meter's minimum or maximum, the spillover keeps running.** A meter pinned at its limit with an inexact rate keeps starting and ending leap years, so a simulation of it never runs out of events by itself.
 - **Asking what would happen covers the meter, not its spillover.** The answer gives the value and schedule. It doesn't say what the spillover would be.

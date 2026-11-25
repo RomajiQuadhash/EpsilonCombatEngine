@@ -216,8 +216,8 @@ namespace Meters_Test
             Assert.Equal(Fraction(0), meter.CurrentSpilloverFraction);
             Assert.Equal(0, meter.MidAdvanceRateChanges);
         }
-        [Fact(DisplayName = "On a fractional timeline a leap year can end partway through a tick, and nothing is lost")]
-        public void FractionalTimelineLosesNothing()
+        [Fact(DisplayName = "On a floating point timeline a leap year can end partway through a tick, and nothing is lost")]
+        public void FloatingPointTimelineLosesNothing()
         {
             Timeline<double> timeline = new();
             RateManagedMeter<double, int> meter = new(timeline, 0, -100000, 100000);

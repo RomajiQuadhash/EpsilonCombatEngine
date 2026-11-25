@@ -300,18 +300,18 @@ public class LinearContinuousMeterTests
         Assert.True(meter.ThresholdPass(50, false).IsNever);
         Assert.True(meter.ThresholdPass(60, false).IsNever);
     }
-    [Fact(DisplayName = "A meter of fractions gives a whole-number timeline the time with the fraction dropped, and a fractional one the closest time")]
+    [Fact(DisplayName = "A meter of fractions gives a whole-number timeline the time with the fraction dropped, and a floating point one the closest time")]
     public void ReachForAMeterOfFractions()
     {
         Timeline<int> wholeTimeline = new();
         LinearContinuousMeter<int, Rational<long>> onWhole = new(wholeTimeline, Rational<long>.Zero, new Rational<long>(-100), new Rational<long>(100));
         onWhole.SetDerivative(new Rational<long>(3, 10));
-        Timeline<double> fractionalTimeline = new();
-        LinearContinuousMeter<double, Rational<long>> onFractional = new(fractionalTimeline, Rational<long>.Zero, new Rational<long>(-100), new Rational<long>(100));
-        onFractional.SetDerivative(new Rational<long>(3, 10));
+        Timeline<double> floatTimeline = new();
+        LinearContinuousMeter<double, Rational<long>> onFloat = new(floatTimeline, Rational<long>.Zero, new Rational<long>(-100), new Rational<long>(100));
+        onFloat.SetDerivative(new Rational<long>(3, 10));
 
         Assert.Equal(new TimeOrNever<int>(3), onWhole.ThresholdReach(Rational<long>.One, false));
-        Assert.Equal(new TimeOrNever<double>(10.0 / 3.0), onFractional.ThresholdReach(Rational<long>.One, false));
+        Assert.Equal(new TimeOrNever<double>(10.0 / 3.0), onFloat.ThresholdReach(Rational<long>.One, false));
     }
     #endregion
     #region Cloning
