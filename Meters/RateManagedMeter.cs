@@ -697,7 +697,6 @@ namespace Meters
         {
             ReachThresholdEvent<T, Rational<long>> leapYearEvent = new(_spilloverFraction, threshold, PriorityRank.MeterBookkeeping, OwningTimeline)
             {
-                CouldOccur = true, //Otherwise the timeline throws it away the first time it isn't heading for its threshold
                 Direction = direction
             };
             leapYearEvent.Occurring += OnLeapYearEvent;

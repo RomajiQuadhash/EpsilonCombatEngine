@@ -29,7 +29,11 @@ namespace Meters
         /// Explicitly settable, since we might want to disable an event without removing it immediately
         /// (it will be removed when the timeline is cleaned (Open and PostEffect when TakeSteps is called))
         /// </summary>
-        public override bool CouldOccur { get; set; }
+        /// <remarks>
+        /// Starts out true, so a threshold event stays on the timeline while its meter isn't heading for the threshold, ready for when it does.
+        /// Set it to false for one that should be thrown away the first time it has no time to occur at.
+        /// </remarks>
+        public override bool CouldOccur { get; set; } = true;
         /// <summary>
         /// Gets the remaining time until the threshold event occurs, or a value indicating it will "never" occur.
         /// "Never" really means "not predicted to occur based on current properties", 

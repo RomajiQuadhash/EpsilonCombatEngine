@@ -315,17 +315,17 @@ public class ReachThresholdEventTests
     }
     #endregion
     #region Staying on the timeline
-    [Fact(DisplayName = "A ReachThresholdEvent that can't currently occur is thrown away by the timeline unless CouldOccur is set")]
-    public void ThrownAwayUnlessCouldOccur()
+    [Fact(DisplayName = "A ReachThresholdEvent that can't currently occur is kept by the timeline, unless CouldOccur was set to false")]
+    public void KeptUnlessCouldOccurIsFalse()
     {
         Timeline<int> timeline = new();
         InstantChangeMeter<int, int> meter = new(timeline, 50, 0, 100);
-        ReachThresholdEvent<int, int> kept = new(meter, 60, PriorityRank.MeterLimit, timeline) { CouldOccur = true };
-        ReachThresholdEvent<int, int> thrownAway = new(meter, 70, PriorityRank.MeterLimit, timeline);
+        ReachThresholdEvent<int, int> kept = new(meter, 60, PriorityRank.MeterLimit, timeline);
+        ReachThresholdEvent<int, int> thrownAway = new(meter, 70, PriorityRank.MeterLimit, timeline) { CouldOccur = false };
         timeline.AddEvent(kept);
         timeline.AddEvent(thrownAway);
         timeline.AddEvent(new BaseCard<int>(5, timeline)); //So the timeline has something to do
-        Assert.False(thrownAway.CouldOccur);
+        Assert.True(kept.CouldOccur); //What a threshold event starts as
         Assert.Contains(thrownAway, timeline.PossibleEvents);
 
         foreach (StepReport<int> _ in timeline.TakeSteps()) { }
