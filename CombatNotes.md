@@ -14,6 +14,17 @@ Nothing should be done about the values besides compare them and fire off events
 Don't think about concepts like "KOs", "Abilities", "specific stats", or "Status effects".
 
 Speed is a stat that is treated differently from other stats since it is an "Aggregate meter". Meters whose values participate in combat-wide aggregates (max, min, sum, etc.) are Aggregate meters and register with a corresponding registry object. The registry is shared across the combat and lives at Meters, and all the meters reference it. Objects owning an aggregate meter hold a reference to the registry and register with it on construction.
+
+`RateManagedMeter` is the meter for anything that has several sources of change at once. It is by far the most complicated one, and `Meters/RateManagedMeter.md` explains why it is the way it is. Read that before changing it.
+
+Things that whatever owns meters needs to know:
+- **A `RateManagedMeter` has to be cloned by whatever owns it, before the timeline's events are rewired.** Usually nothing on the timeline refers to the meter itself (its events only know its spillover meter), so cloning the timeline alone doesn't reach it, and rewiring throws if it was missed.
+- **A `LinearContinuousMeter` never holds an integer type.** Use `double` or a fraction. Whole-number meters are `LinearDiscreteMeter` or `RateManagedMeter`.
+- **Meters are changed by events.** `InstantChangeEvent` makes one change. The temp changes (`TempInstantChange`, `TempContinuousChange`, `TempRMMChange`) make a change and take it back off later. `TempContinuousChange.CreateEventFromLerp` makes the right one for "this much over this long", and `TempRMMChange.CreateEventFromTickedLerp` does the same in a set number of ticks. All of them are an `IMeterChangeEvent`, which says which meter they change and whether they have finished. None of them put themselves on the timeline.
+- **A threshold outside a meter's minimum and maximum never occurs.** One exactly on a limit does. Moving a limit so that the meter is pushed counts as an instant change.
+- **Anything that listens to an event has to be a method of an object that gets cloned too.** Rewiring can't carry any other kind of listener over to a clone.
+
+To run the tests, use `dotnet run --project Meters-Test` and `dotnet run --project Timeline-Test`. `dotnet test` doesn't work with the test packages on the current SDK.
 #### Combatants
 Combatants hold meters and set up flags of itself and hold intrinsic specialties.
 
@@ -33,7 +44,7 @@ What I mean by this is that any games that implement this engine should not do i
 While almost everything needs to be built on top of what comes in, there are some intrinsic elements based on what games I plan to make with it. If you are making your game, evaluate with these.
 
 A list of these include (and things you may need to modify)
-- `PriorityRank` in `IOkPriority` in Timeline: Reference game specific information. Mostly easy to change if needed but you will need a `None` value for the functions to work
+- `PriorityRank` in `IOkPriority` in Timeline: Reference game specific information. Mostly easy to change if needed but you will need a `None` value for the functions to work. You will also need `MeterBookkeeping`, which meters use for their own upkeep (a `RateManagedMeter` starting or ending a leap year, or changing its rate at a tick). It has to stay after the meter limit and trigger priorities, so that a trigger set off by a tick still sees the rate that caused it.
 - `MeterTypes` in `Enums` in Combatants: These currently have no functional meaning (just being lookups), but they need to be set before using Actions (in Combat) that are specific to those meters. May have others added.
 - `StatusEffects` in `Enums` in Combatants: Current ones are pretty generic, implementations will center around those
 - `CombatStats` in `Enums` in Combatants: Likely, these don't need to be changed unless you're fundamentally changing elements of the system
