@@ -20,29 +20,34 @@ namespace Meters
     public class RateManagedMeter<T, M> : LinearDiscreteMeter<T,M> where T : INumber<T> where M : IBinaryInteger<M>
     {
         #region Modifier storage
-        private readonly Dictionary<ModifierKey, ModInstance<T, M>> _modifiers = [];
-        private long _nextId;
         /// <summary>
-        /// Exact sum of every modifier's Magnitude. Never rounded, so removing everything that was added always gets back to exactly 0.
+        /// The bookkeeping for the modifiers that Add, Remove and Replace work on: which ones there are, their exact total, and which is the strongest.
         /// </summary>
-        private Rational<long> _trueModifierSum = Rational<long>.Zero;
+        private readonly ModifierGroup<T, M> _sources = new();
         /// <summary>
-        /// The largest |Magnitude| among the modifiers. Only meaningful if there is at least one modifier.
+        /// The same group that Add, Remove and Replace work on, for a subclass that has more groups of its own
+        /// and needs this one's total and strongest modifier to put together with theirs.
         /// </summary>
-        private Rational<long> _maxMagnitude = Rational<long>.Zero;
-        /// <summary>
-        /// The smallest TickRate among the modifiers that have the largest |Magnitude|. Only meaningful if there is at least one modifier.
-        /// </summary>
-        private T _fastestTickRateAtMax = T.One;
+        protected ModifierGroup<T, M> Sources => _sources;
         /// <summary>
         /// The modifiers that are currently affecting this RateManagedMeter.
         /// Keys are unique identifiers given by the RateManagedMeter to the caller when they add a modifier, and can be used to remove or replace the modifier later.
         /// </summary>
-        public IReadOnlyDictionary<ModifierKey, ModInstance<T, M>> Modifiers => _modifiers;
+        public IReadOnlyDictionary<ModifierKey, ModInstance<T, M>> Modifiers => _sources.Modifiers;
         /// <summary>
-        /// The change per unit of time that the modifiers ask for in total. The ticks approximate this.
+        /// The change per unit of time that this meter is asked for in total. The ticks approximate this.
         /// </summary>
-        public Rational<long> TrueRate => _trueModifierSum;
+        /// <remarks>
+        /// A subclass with more than one group of modifiers overrides this to say how their totals go together.
+        /// It has to call ApplyRateChange whenever the answer changes for a reason other than Add, Remove or Replace.
+        /// </remarks>
+        public virtual Rational<long> TrueRate => _sources.Sum;
+        /// <summary>
+        /// How often the strongest source of change wants to tick, which is how often this meter ticks unless a tick that often would round down to nothing.
+        /// Only used if TrueRate isn't 0.
+        /// </summary>
+        /// <remarks>A subclass with more than one group of modifiers overrides this along with TrueRate, to say which group's strongest modifier is the strongest overall.</remarks>
+        protected virtual T PaceTickRate => _sources.FastestTickRateAtMax;
         #endregion
         #region Rate change state
         /// <summary>
@@ -150,13 +155,7 @@ namespace Meters
         /// <exception cref="OverflowException">If the total of all the modifiers can't be stored exactly. Nothing is changed in that case</exception>
         public ModifierKey Add(ModInstance<T, M> modifier)
         {
-            Rational<long> newSum = RationalConversion.NarrowExact(
-                RationalConversion.Widen(_trueModifierSum) + RationalConversion.Widen(modifier.Magnitude));
-            //Everything that could throw has been done, so now it is safe to change things.
-            ModifierKey key = new(_nextId++);
-            _modifiers.Add(key, modifier);
-            _trueModifierSum = newSum;
-            NoteAdded(modifier);
+            ModifierKey key = _sources.Add(modifier); //If this throws, nothing has been changed
             ApplyRateChange();
             return key;
         }
@@ -167,17 +166,10 @@ namespace Meters
         /// <returns>True if it was removed, false if this meter has no source with that key (in which case nothing changes)</returns>
         public bool Remove(ModifierKey key)
         {
-            if (!_modifiers.TryGetValue(key, out ModInstance<T, M>? removed))
+            if (!_sources.Remove(key))
             {
                 return false;
             }
-            //With nothing left the sum is 0 by definition, so there's nothing to work out.
-            Rational<long> newSum = _modifiers.Count == 1
-                ? Rational<long>.Zero
-                : RationalConversion.NarrowExact(RationalConversion.Widen(_trueModifierSum) - RationalConversion.Widen(removed.Magnitude));
-            _modifiers.Remove(key);
-            _trueModifierSum = newSum;
-            NoteRemoved(removed);
             ApplyRateChange();
             return true;
         }
@@ -190,17 +182,10 @@ namespace Meters
         /// <exception cref="OverflowException">If the total of all the modifiers can't be stored exactly. Nothing is changed in that case</exception>
         public bool Replace(ModifierKey key, ModInstance<T, M> modifier)
         {
-            if (!_modifiers.TryGetValue(key, out ModInstance<T, M>? removed))
+            if (!_sources.Replace(key, modifier)) //If this throws, nothing has been changed
             {
                 return false;
             }
-            Rational<long> newSum = RationalConversion.NarrowExact(
-                RationalConversion.Widen(_trueModifierSum) + RationalConversion.Widen(modifier.Magnitude) - RationalConversion.Widen(removed.Magnitude));
-            _modifiers[key] = modifier;
-            _trueModifierSum = newSum;
-            //Removing first means a rescan (if needed) already sees the new modifier, and then adding it again changes nothing.
-            NoteRemoved(removed);
-            NoteAdded(modifier);
             ApplyRateChange();
             return true;
         }
@@ -211,57 +196,6 @@ namespace Meters
         public override bool SetDerivative(M newDerivative, T newDDenominator, out Rational<long> spillover)
         {
             throw new NotSupportedException($"A {nameof(RateManagedMeter<T, M>)} works out its own derivative. Add, Remove or Replace a modifier instead.");
-        }
-        #endregion
-        #region Strongest modifier tracking
-        /// <summary>
-        /// Updates the strongest modifier after one is added. Only needs to look at the new one.
-        /// </summary>
-        private void NoteAdded(ModInstance<T, M> added)
-        {
-            Rational<long> magnitude = Rational<long>.Abs(added.Magnitude);
-            int comparison = _modifiers.Count == 1 ? 1 : RationalConversion.Compare(magnitude, _maxMagnitude);
-            if (comparison > 0)
-            {
-                _maxMagnitude = magnitude;
-                _fastestTickRateAtMax = added.TickRate;
-            }
-            else if (comparison == 0 && added.TickRate < _fastestTickRateAtMax)
-            {
-                //Equally strong, so the faster one decides the tick rate
-                _fastestTickRateAtMax = added.TickRate;
-            }
-        }
-        /// <summary>
-        /// Updates the strongest modifier after one is removed. Only looks through the rest if the removed one was as strong as the strongest.
-        /// </summary>
-        /// <remarks>Compares by value, since two different modifiers can be equally strong</remarks>
-        private void NoteRemoved(ModInstance<T, M> removed)
-        {
-            if (_modifiers.Count == 0)
-            {
-                //Nothing left to be the strongest
-                _maxMagnitude = Rational<long>.Zero;
-                _fastestTickRateAtMax = T.One;
-                return;
-            }
-            if (RationalConversion.Compare(Rational<long>.Abs(removed.Magnitude), _maxMagnitude) < 0)
-            {
-                //Something stronger is still there, so nothing changes
-                return;
-            }
-            bool first = true;
-            foreach (ModInstance<T, M> modifier in _modifiers.Values)
-            {
-                Rational<long> magnitude = Rational<long>.Abs(modifier.Magnitude);
-                int comparison = first ? 1 : RationalConversion.Compare(magnitude, _maxMagnitude);
-                if (comparison > 0 || (comparison == 0 && modifier.TickRate < _fastestTickRateAtMax))
-                {
-                    _maxMagnitude = magnitude;
-                    _fastestTickRateAtMax = modifier.TickRate;
-                }
-                first = false;
-            }
         }
         #endregion
         #region Working out and applying the rate
@@ -282,24 +216,26 @@ namespace Meters
         /// <returns>True if the modifiers ask for any change at all</returns>
         private bool ComputeBaseRate(T tickRateIfStopped, out M perTick, out T tickRate)
         {
-            if (_modifiers.Count == 0 || _trueModifierSum.Numerator == 0)
+            Rational<long> trueRate = TrueRate; //With no modifiers this is 0 too
+            if (trueRate.Numerator == 0)
             {
                 perTick = M.Zero;
                 tickRate = tickRateIfStopped;
                 return false;
             }
             //The strongest modifier sets the pace, but never so fast that a tick would round down to nothing.
-            Rational<long> smallestUsefulTickRate = Rational<long>.Abs(Rational<long>.One / _trueModifierSum);
+            Rational<long> smallestUsefulTickRate = Rational<long>.Abs(Rational<long>.One / trueRate);
             tickRate = RationalConversion.FromRational<T>(smallestUsefulTickRate, FractionRounding.AtLeast);
-            if (_fastestTickRateAtMax > tickRate)
+            T pace = PaceTickRate;
+            if (pace > tickRate)
             {
-                tickRate = _fastestTickRateAtMax;
+                tickRate = pace;
             }
             perTick = TruncatedPerTick(tickRate);
             if (M.IsZero(perTick))
             {
                 //If there's a change, the derivative should never be 0
-                perTick = _trueModifierSum.Numerator < 0 ? -M.One : M.One;
+                perTick = trueRate.Numerator < 0 ? -M.One : M.One;
             }
             return true;
         }
@@ -308,7 +244,7 @@ namespace Meters
         /// </summary>
         private M TruncatedPerTick(T tickRate)
         {
-            Rational<Int128> exact = RationalConversion.Widen(RationalConversion.ToRational(tickRate)) * RationalConversion.Widen(_trueModifierSum);
+            Rational<Int128> exact = RationalConversion.Widen(RationalConversion.ToRational(tickRate)) * RationalConversion.Widen(TrueRate);
             return M.CreateChecked(exact.Numerator / exact.Denominator);
         }
         /// <summary>
@@ -352,7 +288,8 @@ namespace Meters
         /// <summary>
         /// Called after the modifiers change. Decides whether the new rate starts now, replaces the tick in progress, or waits for it.
         /// </summary>
-        private void ApplyRateChange()
+        /// <remarks>A subclass that overrides TrueRate or PaceTickRate calls this whenever what they give has changed.</remarks>
+        protected void ApplyRateChange()
         {
             if (!IsTickInProgress)
             {
@@ -525,7 +462,7 @@ namespace Meters
             }
             Rational<Int128> appliedRate = RationalConversion.Widen(RationalConversion.ToRational(state.Derivative - plan.BlendPerTick))
                 / RationalConversion.Widen(RationalConversion.ToRational(state.DerivativeDenominator));
-            return RationalConversion.LimitDenominator(RationalConversion.Widen(_trueModifierSum) - appliedRate);
+            return RationalConversion.LimitDenominator(RationalConversion.Widen(TrueRate) - appliedRate);
         }
         /// <summary>
         /// Points the spillover at the gap between what the modifiers ask for and what the ticks are applying.
@@ -857,14 +794,7 @@ namespace Meters
             clone.CopyScheduleFrom(this);
 
             //The modifiers. A ModInstance can't change, so both meters can refer to the same ones.
-            foreach (KeyValuePair<ModifierKey, ModInstance<T, M>> modifier in _modifiers)
-            {
-                clone._modifiers.Add(modifier.Key, modifier.Value);
-            }
-            clone._nextId = _nextId;
-            clone._trueModifierSum = _trueModifierSum;
-            clone._maxMagnitude = _maxMagnitude;
-            clone._fastestTickRateAtMax = _fastestTickRateAtMax;
+            clone._sources.CopyFrom(_sources);
 
             //The events. This comes after registering, since the tick card's face is this meter and cloning the card asks for this meter's clone.
             //Whichever of these the timeline has already cloned are in the context, and the rest are cloned now.
@@ -896,7 +826,7 @@ namespace Meters
         }
         public override string ToString()
         {
-            return base.ToString() + $", {_modifiers.Count} modifiers asking for {_trueModifierSum} per time unit, spillover {CurrentSpilloverFraction}"
+            return base.ToString() + $", {Modifiers.Count} modifiers asking for {TrueRate} per time unit, spillover {CurrentSpilloverFraction}"
                 + (CurrentLeapYear != LeapYearState.None ? $", in a {CurrentLeapYear} leap year" : "")
                 + (IsBlendRunning ? $", blending {BlendPerTick} extra into each of the next {BlendTicksLeft} ticks" : "")
                 + (IsRateChangePending ? ", rate change waiting for the tick in progress" : "")
@@ -915,8 +845,4 @@ namespace Meters
         /// <summary>Each tick is one lower, since the meter is ahead of what it has earned</summary>
         Negative
     }
-    /// <summary>
-    /// Identifies one modifier on one RateManagedMeter. Only a RateManagedMeter makes these.
-    /// </summary>
-    public readonly record struct ModifierKey(long Id);
 }

@@ -18,6 +18,7 @@ A real meter has several sources at once, each with its own schedule: a regenera
 |---|---|
 | `ModInstance` | One source: an amount per tick and a tick rate. It can't change. To change a source, replace it. |
 | `ModifierKey` | What `Add` hands back, used to `Replace` or `Remove` that source later. |
+| `ModifierGroup` | The bookkeeping for one category of sources: which there are, their exact sum, and which is strongest. The meter has one. |
 | True rate | The exact sum of every source's amount ÷ tick rate. What the meter should average. |
 | Tick rate | How often the meter actually ticks. Taken from the strongest source. |
 | Per tick | What each tick adds: the true rate × tick rate with the fraction dropped, plus a leap year's 1, plus a blend's share. |
@@ -65,6 +66,18 @@ If the true rate is so small that a tick at the strongest source's pace would ad
 ### The rate can't be set directly
 
 `SetDerivative` throws. On an ordinary discrete meter it is how you set the rate, but here the rate comes from the sources, so setting it isn't "not allowed right now", it is the wrong thing to ask for.
+
+### The bookkeeping is its own class
+
+The sources, their exact sum and the cached strongest source live in a `ModifierGroup`. The meter has one, and `Add`, `Replace` and `Remove` pass through to it. The group knows nothing about ticks. The meter only asks it two things: what the total is (`TrueRate`) and how often the strongest source ticks (`PaceTickRate`).
+
+*Why:* some meters have more than one category of source, where one category counts differently from another (damage that is divided by a defense, next to healing that isn't). Such a meter is a subclass that holds a second group, overrides `TrueRate` and `PaceTickRate` to say how the groups go together, and calls `ApplyRateChange` whenever that answer changes for a reason other than adding, replacing or removing. Putting two categories inside `RateManagedMeter` itself was considered and turned down, since most meters only need one.
+
+Three things follow:
+
+- **Changing how a group counts touches no source.** The sources stay as they were added, and the meter works out its rate again once. The rules below for a change partway through a tick apply as they do to any other change.
+- **A key belongs to the group that gave it.** Two groups can hand out the same key, so a subclass needs separate methods for each group.
+- **A subclass has to copy its own groups when it is cloned,** with `ModifierGroup.CopyFrom`.
 
 ## When the sources change
 
