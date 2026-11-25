@@ -269,6 +269,16 @@ While paused:
 
 *Why a change while paused waits:* working out a new schedule starts ticks, moves the tick card and sets the spillover's rate, which is everything a pause has stopped. Noting that something changed and doing it once on resuming keeps the pause simple.
 
+### Starting fresh
+
+`StartFresh` (also protected) puts the meter at a given value with nothing changing it, as if it had just been made. It removes every source, drops the tick in progress without landing it, forgets any blend, leap year and spillover, and ends a pause. The jump to the new value is an instant change, so thresholds between the old value and the new one notice it.
+
+*Why it exists:* a pause keeps everything for later, which is wrong when the meter should come back clean (a combatant brought back from a KO shouldn't be hit by the rest of a tick from before it). Removing the sources isn't enough, since the rule is that the last tick still lands when the sources go away. Only this class can drop a tick, because its public `SetDerivative` refuses.
+
+*Why it clears the sources too:* anything still holding a key from before would otherwise remove or replace a source later. `ModifierGroup.Clear` retires the keys it has given, so those calls find nothing.
+
+A subclass with groups of its own clears those before calling it. Whatever they still hold starts ticking from that moment.
+
 ## Cloning
 
 `Clone` follows the same pattern as the other meters: a clone constructor that only lets values be set, with `Clone` finding and filling in everything.

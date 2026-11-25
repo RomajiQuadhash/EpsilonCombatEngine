@@ -863,6 +863,45 @@ namespace Meters
                 UpdateTickCard();
             }
         }
+        /// <summary>
+        /// Puts the meter at a value with nothing changing it, as if it had just been made: every modifier from Add is removed (their keys stop working),
+        /// the tick in progress is dropped without landing, any blend and anything owed in the spillover is forgotten, and a pause is ended.
+        /// </summary>
+        /// <remarks>
+        /// The jump to the new value is an instant change, so thresholds between the old value and the new one notice it.
+        /// A subclass with groups of modifiers of its own clears those before calling this. Whatever they still hold starts ticking from now.
+        /// </remarks>
+        /// <param name="newValue">The value to jump to. Must be within the minimum and maximum</param>
+        /// <exception cref="ArgumentOutOfRangeException">If newValue is below the minimum or above the maximum. Nothing is changed in that case</exception>
+        protected void StartFresh(M newValue)
+        {
+            if (IsOutsideRange(newValue))
+            {
+                throw new ArgumentOutOfRangeException(nameof(newValue), newValue, $"The value to start fresh at must be in [{MinValue},{MaxValue}]");
+            }
+            _sources.Clear();
+            IsPaused = false;
+            _rateChangedWhilePaused = false;
+            _spilloverRateBeforePause = Rational<long>.Zero;
+
+            //The schedule. Setting the derivative directly is what drops the tick in progress.
+            base.SetDerivative(M.Zero, DerivativeDenominator, out _);
+            IsRateChangePending = false;
+            BlendPerTick = M.Zero;
+            BlendTicksLeft = M.Zero;
+            CurrentLeapYear = LeapYearState.None;
+            UpcomingLeapYear = LeapYearState.None;
+
+            //The spillover. The end event is dropped first, since emptying the spillover would otherwise look to it like the leap year finishing.
+            DropLeapYearEnd();
+            _spilloverFraction.SetDerivative(Rational<long>.Zero);
+            _spilloverFraction.AddInstantChange(-_spilloverFraction.CurrentValue);
+            PutLeapYearEventsOnTimeline();
+
+            AddInstantChange(newValue - CurrentValue);
+            //Starts ticking for whatever a subclass's own groups still hold, and takes the tick card off if nothing is left.
+            ApplyRateChange();
+        }
         #endregion
         #region Cloning
         /// <summary>

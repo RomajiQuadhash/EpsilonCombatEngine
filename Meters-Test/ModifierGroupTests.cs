@@ -123,6 +123,28 @@ public class ModifierGroupTests
         Assert.Equal(2, group.Modifiers.Count);
         Assert.Equal(sumBefore, group.Sum);
     }
+    [Fact(DisplayName = "Clearing a group removes everything at once, and the keys it gave before stop working and are never given again")]
+    public void ClearRemovesEverythingAndRetiresTheKeys()
+    {
+        ModifierGroup<int, int> group = new();
+        ModifierKey first = group.Add(new ModInstance<int, int>(1, 3));
+        ModifierKey second = group.Add(new ModInstance<int, int>(-7, 2));
+
+        group.Clear();
+
+        Assert.Empty(group.Modifiers);
+        Assert.Equal(Rational<long>.Zero, group.Sum);
+        Assert.Equal(Rational<long>.Zero, group.MaxMagnitude);
+        Assert.False(group.Remove(first));
+        Assert.False(group.Replace(second, new ModInstance<int, int>(8, 2)));
+
+        ModifierKey afterClear = group.Add(new ModInstance<int, int>(2, 5));
+
+        Assert.NotEqual(first, afterClear);
+        Assert.NotEqual(second, afterClear);
+        Assert.Equal(new Rational<long>(2, 5), group.Sum);
+        Assert.Equal(5, group.FastestTickRateAtMax);
+    }
     [Fact(DisplayName = "A group copied from another has the same modifiers under the same keys, and the two change separately afterwards")]
     public void CopyFromMatchesAndThenIsSeparate()
     {

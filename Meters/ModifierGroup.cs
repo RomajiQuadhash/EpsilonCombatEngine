@@ -93,6 +93,17 @@ namespace Meters
             return true;
         }
         /// <summary>
+        /// Removes every source of change from this group at once.
+        /// The keys it has given out stop working and are never given out again, so something still holding one can't remove a later source by mistake.
+        /// </summary>
+        public void Clear()
+        {
+            _modifiers.Clear();
+            Sum = Rational<long>.Zero;
+            MaxMagnitude = Rational<long>.Zero;
+            FastestTickRateAtMax = T.One;
+        }
+        /// <summary>
         /// Makes this group hold exactly what another one does, under the same keys. Only for cloning.
         /// </summary>
         /// <remarks>A ModInstance can't change, so both groups can refer to the same ones.</remarks>
