@@ -864,12 +864,14 @@ namespace Meters
             }
         }
         #endregion
+        #region Cloning
         /// <summary>
         /// Clones this meter along with its spillover meter, its leap year events and its tick card.
         /// </summary>
         /// <remarks>
         /// The clone doesn't listen to its events here. Rewiring the original's events does that (Timeline.RewireAllEvents does all of them),
         /// the same as for anything else that listens to an event. Every event this meter cares about is on the timeline, so that is enough.
+        /// Subclasses override CreateEmptyForClone, and CopyPropertiesForClone if they have more to copy.
         /// </remarks>
         /// <exception cref="UnrecoverableCloneException">If the owning timeline hasn't been cloned yet</exception>
         public override object Clone(CloneContext context)
@@ -885,10 +887,36 @@ namespace Meters
             //The spillover is an ordinary meter that knows nothing about this one, so it is safe to clone before this is registered.
             //If the timeline has already cloned one of the leap year events, this just finds the clone that made.
             LinearContinuousMeter<T, Rational<long>> spilloverClone = context.GetOrClone(_spilloverFraction);
-            RateManagedMeter<T, M> clone = new(owningTimelineClone, CurrentValue - InstantChange, MinValue, MaxValue, spilloverClone);
+            RateManagedMeter<T, M> clone = CreateEmptyForClone(owningTimelineClone, spilloverClone, context);
             context.Register(this, clone);
+            //This comes after registering, since the tick card's face is this meter and cloning the card asks for this meter's clone.
+            CopyPropertiesForClone(clone, context);
 
-            //Now update this to match
+            //A meter has to advance before its spillover, and the spillover clone was made (and so subscribed) before the meter clone.
+            //Taking it off and putting it back on makes it the later of the two again.
+            owningTimelineClone.Advance -= spilloverClone.OnAdvance;
+            owningTimelineClone.Advance += spilloverClone.OnAdvance;
+            return clone;
+        }
+        /// <summary>
+        /// Makes a new instance of this class for the cloned timeline, with the value, minimum and maximum this meter has and nothing else.
+        /// A subclass overrides this to make one of itself with its own clone constructor, which should pass the spillover on to this class's clone constructor.
+        /// </summary>
+        /// <param name="owningTimeline">The timeline that should own the clone</param>
+        /// <param name="spilloverFraction">The clone of this meter's spillover meter, for the clone to use as its own</param>
+        /// <param name="context">The clone context, in case the subclass needs the clones of other objects to make itself</param>
+        protected virtual RateManagedMeter<T, M> CreateEmptyForClone(Timeline<T> owningTimeline, LinearContinuousMeter<T, Rational<long>> spilloverFraction, CloneContext context)
+        {
+            //Without the instant change, which CopyPropertiesForClone puts back so that the clone has it as an instant change too
+            return new(owningTimeline, CurrentValue - InstantChange, MinValue, MaxValue, spilloverFraction);
+        }
+        /// <summary>
+        /// Fills in a clone to match this meter. Override this (but always call base.CopyPropertiesForClone) in subclasses to copy any additional properties.
+        /// </summary>
+        /// <param name="clone">The new clone to modify. Already registered with the context</param>
+        /// <param name="context">The clone context, for the clones of the events this meter refers to</param>
+        protected virtual void CopyPropertiesForClone(RateManagedMeter<T, M> clone, CloneContext context)
+        {
             clone.AddInstantChange(InstantChange); //Set instant change and bring CurrentValue back to where it is here
             clone.UUID = UUID;
             clone.CopyScheduleFrom(this);
@@ -896,18 +924,11 @@ namespace Meters
             //The modifiers. A ModInstance can't change, so both meters can refer to the same ones.
             clone._sources.CopyFrom(_sources);
 
-            //The events. This comes after registering, since the tick card's face is this meter and cloning the card asks for this meter's clone.
-            //Whichever of these the timeline has already cloned are in the context, and the rest are cloned now.
+            //The events. Whichever of these the timeline has already cloned are in the context, and the rest are cloned now.
             clone._positiveLeapYearStart = _positiveLeapYearStart is null ? null : context.GetOrClone(_positiveLeapYearStart);
             clone._negativeLeapYearStart = _negativeLeapYearStart is null ? null : context.GetOrClone(_negativeLeapYearStart);
             clone._leapYearEnd = _leapYearEnd is null ? null : context.GetOrClone(_leapYearEnd);
             clone._tickCard = _tickCard is null ? null : context.GetOrClone(_tickCard);
-
-            //A meter has to advance before its spillover, and the spillover clone was made (and so subscribed) before the meter clone.
-            //Taking it off and putting it back on makes it the later of the two again.
-            owningTimelineClone.Advance -= spilloverClone.OnAdvance;
-            owningTimelineClone.Advance += spilloverClone.OnAdvance;
-            return clone;
         }
         /// <summary>
         /// Puts this meter at the same point in the same schedule as another one. Only for cloning.
@@ -923,7 +944,11 @@ namespace Meters
             UpcomingLeapYear = original.UpcomingLeapYear;
             BlendPerTick = original.BlendPerTick;
             BlendTicksLeft = original.BlendTicksLeft;
+            IsPaused = original.IsPaused;
+            _spilloverRateBeforePause = original._spilloverRateBeforePause;
+            _rateChangedWhilePaused = original._rateChangedWhilePaused;
         }
+        #endregion
         public override string ToString()
         {
             return base.ToString() + $", {Modifiers.Count} modifiers asking for {TrueRate} per time unit, spillover {CurrentSpilloverFraction}"
