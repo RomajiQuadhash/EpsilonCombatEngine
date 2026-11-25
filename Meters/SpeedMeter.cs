@@ -49,7 +49,7 @@ namespace Meters
         /// <summary>
         /// How many times larger than the delay at max speed can the delay be? 
         /// </summary>
-        public static readonly Rational<long> MaxDelayMagnitude = new(3, 1); //BATTLE TUNING PROPERTY
+        public static readonly Rational<long> MaxDelayMagnitude = BattleTuning.MaxDelayMagnitude; //The value is set in CoreMetrics' BattleTuning
         /// <summary>
         /// This speed/max speed. Never use the raw speed value for delay calculations, instead only this fraction
         /// </summary>

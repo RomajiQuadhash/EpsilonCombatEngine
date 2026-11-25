@@ -43,6 +43,8 @@ What I mean by this is that any games that implement this engine should not do i
 ### Customization points
 While almost everything needs to be built on top of what comes in, there are some intrinsic elements based on what games I plan to make with it. If you are making your game, evaluate with these.
 
+The numbers that tune how battles feel (how much a slow combatant's delays can stretch, the lowest Defense can count as, and so on) are all in `BattleTuning` in CoreMetrics, as exact fractions. This is an exception to the lower projects not knowing what the higher ones do: the file names concepts from Meters and Combatants, but it is at the bottom so that everything can read it and so the numbers can be adjusted together. Only the numbers go there. They are core to the engine, so they are not what a config file would set (that is for attack values and enemy properties).
+
 A list of these include (and things you may need to modify)
 - `PriorityRank` in `IOkPriority` in Timeline: Reference game specific information. Mostly easy to change if needed but you will need a `None` value for the functions to work. You will also need `MeterBookkeeping`, which meters use for their own upkeep (a `RateManagedMeter` starting or ending a leap year, or changing its rate at a tick). It has to stay after the meter limit and trigger priorities, so that a trigger set off by a tick still sees the rate that caused it.
 - `MeterTypes` in `Enums` in Combatants: These currently have no functional meaning (just being lookups), but they need to be set before using Actions (in Combat) that are specific to those meters. May have others added.
