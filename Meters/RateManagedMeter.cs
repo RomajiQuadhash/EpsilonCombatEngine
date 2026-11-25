@@ -77,6 +77,23 @@ namespace Meters
         /// </summary>
         public M BlendTicksLeft { get; private set; } = M.Zero;
         /// <summary>
+        /// True while the meter is paused: time passing doesn't move it, and it answers threshold questions as a meter that isn't moving.
+        /// Its modifiers, its place in the tick in progress, its leap year and its blend are all kept for when it is resumed.
+        /// </summary>
+        public bool IsPaused { get; private set; }
+        /// <summary>
+        /// The spillover's rate from before the pause, which it gets back when the meter is resumed. Only meaningful while paused.
+        /// </summary>
+        private Rational<long> _spilloverRateBeforePause = Rational<long>.Zero;
+        /// <summary>
+        /// True if something that should change the rate happened while paused. The change is made when the meter is resumed.
+        /// </summary>
+        private bool _rateChangedWhilePaused;
+        /// <summary>
+        /// A paused meter isn't moving, whatever its derivative says.
+        /// </summary>
+        protected override bool IsStill => IsPaused || base.IsStill;
+        /// <summary>
         /// True if a blend still has ticks to pay out on.
         /// </summary>
         private bool IsBlendRunning => !M.IsZero(BlendPerTick) && BlendTicksLeft > M.Zero;
@@ -153,7 +170,8 @@ namespace Meters
         /// <param name="modifier">The source to add</param>
         /// <returns>The key to use to replace or remove this source later. Keep it, since the modifier itself is anonymous</returns>
         /// <exception cref="OverflowException">If the total of all the modifiers can't be stored exactly. Nothing is changed in that case</exception>
-        public ModifierKey Add(ModInstance<T, M> modifier)
+        /// <remarks>Virtual so that a subclass can refuse sources while it is in a state where nothing should be changing it.</remarks>
+        public virtual ModifierKey Add(ModInstance<T, M> modifier)
         {
             ModifierKey key = _sources.Add(modifier); //If this throws, nothing has been changed
             ApplyRateChange();
@@ -291,6 +309,12 @@ namespace Meters
         /// <remarks>A subclass that overrides TrueRate or PaceTickRate calls this whenever what they give has changed.</remarks>
         protected void ApplyRateChange()
         {
+            if (IsPaused)
+            {
+                //The schedule is frozen. Whatever the rate is by then takes effect when the meter is resumed.
+                _rateChangedWhilePaused = true;
+                return;
+            }
             if (!IsTickInProgress)
             {
                 //Nothing has built up, so the new rate can just start.
@@ -476,6 +500,10 @@ namespace Meters
         /// </summary>
         protected override TickState AdvanceTicks(T timeElapsed, TickState start)
         {
+            if (IsPaused)
+            {
+                return start;
+            }
             return Walk(timeElapsed, start, out _, out _, out _, out _);
         }
         /// <summary>
@@ -483,6 +511,10 @@ namespace Meters
         /// </summary>
         protected override void CommitTickState(T timeElapsed, TickState start, TickState end)
         {
+            if (IsPaused)
+            {
+                return; //Nothing moved, so there is nothing to make real
+            }
             //Has to be done before anything is committed, since it is the same working out that AdvanceTicks did.
             Walk(timeElapsed, start, out Plan plan, out bool startedNewTick, out Rational<long> spilloverOwed, out int midAdvanceChanges);
             base.CommitTickState(timeElapsed, start, end);
@@ -700,6 +732,12 @@ namespace Meters
                 return; //Not one this meter still cares about
             }
             PutLeapYearEventsOnTimeline();
+            if (IsPaused)
+            {
+                //Only possible if the spillover was sitting exactly on a threshold when the pause started. Resuming picks it up.
+                _rateChangedWhilePaused = true;
+                return;
+            }
             if (IsTickInProgress)
             {
                 //The tick in progress finishes as it was. The tick card makes the change when it lands.
@@ -717,6 +755,12 @@ namespace Meters
         private void UpdateTickCard()
         {
             T untilTick;
+            if (IsPaused)
+            {
+                //No tick is going to land while paused, so there is nothing to stop the timeline for
+                RemoveTickCard();
+                return;
+            }
             if (IsWaitingForTick && IsTickInProgress)
             {
                 untilTick = TimeUntilTick(M.One);
@@ -727,13 +771,7 @@ namespace Meters
             }
             else
             {
-                if (_tickCard is not null && OwningTimeline.RemoveEvent(_tickCard))
-                {
-                    OwningTimeline.Advance -= _tickCard.OnAdvance;
-                    _tickCard.Occurring -= OnTickCard;
-                    _tickCard = null;
-                }
-                //If it couldn't be taken off the timeline, it stays. It gets reused if it is needed again, and ignored if it occurs first.
+                RemoveTickCard();
                 return;
             }
             if (_tickCard is not null)
@@ -746,6 +784,19 @@ namespace Meters
             OwningTimeline.AddPossibleEvent(_tickCard);
         }
         /// <summary>
+        /// Takes the tick card off the timeline, if there is one and the timeline allows it right now.
+        /// If it couldn't be taken off, it stays. It gets reused if it is needed again, and ignored if it occurs first.
+        /// </summary>
+        private void RemoveTickCard()
+        {
+            if (_tickCard is not null && OwningTimeline.RemoveEvent(_tickCard))
+            {
+                OwningTimeline.Advance -= _tickCard.OnAdvance;
+                _tickCard.Occurring -= OnTickCard;
+                _tickCard = null;
+            }
+        }
+        /// <summary>
         /// Called when the tick card occurs. If the tick it was for has landed and something is waiting on that, the change is made.
         /// </summary>
         private void OnTickCard(object sender, Okazo<T> okazo)
@@ -755,6 +806,10 @@ namespace Meters
                 return;
             }
             _tickCard = null; //The timeline is done with it once it has occurred
+            if (IsPaused)
+            {
+                return; //It couldn't be taken off when the pause started. Resuming puts one wherever it is needed then.
+            }
             if (IsWaitingForTick && !IsTickInProgress)
             {
                 StartNewTick();
@@ -762,6 +817,51 @@ namespace Meters
             }
             //Either it was for a tick that got cancelled, or nothing needed it any more. Put it wherever it is needed now, if anywhere.
             UpdateTickCard();
+        }
+        #endregion
+        #region Pausing
+        /// <summary>
+        /// Stops time from moving this meter until Resume is called. Does nothing if it is already paused.
+        /// The meter keeps its modifiers and its place in the tick in progress, and modifiers can still be added, replaced and removed.
+        /// Instant changes and changes to the minimum and maximum still happen as normal.
+        /// </summary>
+        /// <remarks>
+        /// The meter and its spillover stay subscribed to the timeline, since that is what clears InstantChange after each advance.
+        /// Instead, advancing changes nothing, the spillover's rate is 0, and no tick card is kept, so nothing on the timeline is waiting for this meter to move.
+        /// </remarks>
+        protected void Pause()
+        {
+            if (IsPaused)
+            {
+                return;
+            }
+            IsPaused = true;
+            _rateChangedWhilePaused = false;
+            _spilloverRateBeforePause = _spilloverFraction.Derivative;
+            _spilloverFraction.SetDerivative(Rational<long>.Zero);
+            UpdateTickCard();
+        }
+        /// <summary>
+        /// Lets time move this meter again, from exactly where it was when it was paused. Does nothing if it isn't paused.
+        /// If the modifiers (or anything else the rate comes from) changed while paused, that change is made now, as if it had just happened.
+        /// </summary>
+        protected void Resume()
+        {
+            if (!IsPaused)
+            {
+                return;
+            }
+            IsPaused = false;
+            _spilloverFraction.SetDerivative(_spilloverRateBeforePause);
+            if (_rateChangedWhilePaused)
+            {
+                _rateChangedWhilePaused = false;
+                ApplyRateChange();
+            }
+            else
+            {
+                UpdateTickCard();
+            }
         }
         #endregion
         /// <summary>
@@ -827,6 +927,7 @@ namespace Meters
         public override string ToString()
         {
             return base.ToString() + $", {Modifiers.Count} modifiers asking for {TrueRate} per time unit, spillover {CurrentSpilloverFraction}"
+                + (IsPaused ? ", paused" : "")
                 + (CurrentLeapYear != LeapYearState.None ? $", in a {CurrentLeapYear} leap year" : "")
                 + (IsBlendRunning ? $", blending {BlendPerTick} extra into each of the next {BlendTicksLeft} ticks" : "")
                 + (IsRateChangePending ? ", rate change waiting for the tick in progress" : "")

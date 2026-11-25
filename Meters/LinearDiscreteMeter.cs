@@ -37,6 +37,11 @@ namespace Meters
         /// How much time it takes between updates?
         /// </summary>
         public override T DerivativeDenominator => _derivativeDenominator;
+        /// <summary>
+        /// True if time passing isn't going to change this meter as things stand, so only an instant change can take it to a threshold.
+        /// A subclass that can hold itself still while it has a derivative overrides this, and has to stay true whenever the derivative is 0.
+        /// </summary>
+        protected virtual bool IsStill => M.IsZero(Derivative);
         #region Function Overrides
         /// <summary>
         /// Everything about a discrete meter that moving time forward can change.
@@ -169,7 +174,7 @@ namespace Meters
                 //The meter stops at its minimum and maximum, so it can never get there
                 return new(true);
             }
-            if (M.IsZero(Derivative))
+            if (IsStill)
             {
                 return base.ThresholdReach(threshold, allowNegative);
             }
@@ -220,7 +225,7 @@ namespace Meters
                 //The meter stops at its minimum and maximum, so it can never get there
                 return new(true);
             }
-            if (M.IsZero(Derivative))
+            if (IsStill)
             {
                 return base.ThresholdPass(threshold, allowNegative);
             }

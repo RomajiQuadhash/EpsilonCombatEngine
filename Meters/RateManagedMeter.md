@@ -252,6 +252,23 @@ On a `double` timeline, adding the elapsed time to the tick's progress and takin
 
 *Why:* subtracting a number from itself is always exactly 0, but only if both sides are worked out the same way. Before this, about 2.3% of random floating point cases missed their tick.
 
+## Pausing
+
+`Pause` and `Resume` are protected, for a subclass that needs time to stop moving the meter for a while and then carry on from exactly where it was (a combatant that can't be touched for a few moments). `IsPaused` says which state it is in.
+
+While paused:
+
+- **Advancing changes nothing.** The meter keeps its sources, its place in the tick in progress, its leap year and its blend.
+- **Threshold questions are answered as a meter that isn't moving.** `LinearDiscreteMeter` asks `IsStill` instead of checking the derivative for 0, and this meter says it is still while paused.
+- **The spillover's rate is 0,** and it gets its old rate back on resuming.
+- **There is no tick card.**
+- **Instant changes and changes to the limits work as normal.**
+- **Sources can still be added, replaced and removed.** The schedule doesn't change until the meter is resumed, and then it changes as if the sources had just changed.
+
+*Why not unsubscribe the meter and its spillover from the timeline:* that was the first idea, and it does freeze both values. But three things on the timeline predict from the stored rates and would keep waiting for a meter that isn't moving: threshold events on the meter, the leap year events on the spillover, and the tick card. And `InstantChange` is only cleared when a meter advances, so an instant change made while unsubscribed would look like it had just happened for the whole pause. Staying subscribed and doing nothing on an advance avoids all four, and there is no advance order to put back afterwards.
+
+*Why a change while paused waits:* working out a new schedule starts ticks, moves the tick card and sets the spillover's rate, which is everything a pause has stopped. Noting that something changed and doing it once on resuming keeps the pause simple.
+
 ## Cloning
 
 `Clone` follows the same pattern as the other meters: a clone constructor that only lets values be set, with `Clone` finding and filling in everything.
@@ -262,6 +279,7 @@ Things specific to this meter:
 - **It doesn't listen to its events.** Rewiring the original's events does that, as for anything else that listens to an event.
 - **It registers itself before cloning the tick card,** since the card's face is the meter.
 - **It moves its spillover after itself in the advance order.** The meter has to advance before its spillover, and if the timeline cloned an event first, the spillover's clone was made first.
+- **A subclass overrides two methods, not `Clone`.** `CreateEmptyForClone` makes one of the subclass with its own clone constructor, and `CopyPropertiesForClone` copies whatever the subclass adds (after calling the base). `Clone` itself keeps the order of the steps above, so a subclass can't get them wrong. This is the same shape as `TimedTempChange`.
 
 **Whatever owns the meter has to clone it before the timeline's events are rewired.** Unless a tick card happens to be on the timeline, nothing on the timeline refers to the meter itself. The leap year events only know its spillover. If the meter was never cloned, rewiring throws.
 
