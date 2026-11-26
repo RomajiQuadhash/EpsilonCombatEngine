@@ -55,9 +55,9 @@ public class HealthMeterTests
 
         health.AddDamage(new ModInstance<int, int>(10, 1));
 
-        Assert.Equal(HealthMeter<int>.MinDefense, health.EffectiveDefense);
-        Assert.Equal(HealthMeter<int>.MinDefense, health.BaseDefense);
-        Assert.Equal(new Rational<long>(-10) / HealthMeter<int>.MinDefense, health.TrueRate);
+        Assert.Equal(BattleTuning.MinDefense, health.EffectiveDefense);
+        Assert.Equal(BattleTuning.MinDefense, health.BaseDefense);
+        Assert.Equal(new Rational<long>(-10) / BattleTuning.MinDefense, health.TrueRate);
     }
     [Fact(DisplayName = "With two sources of damage, the stronger one sets how often the health ticks, and removing it hands that to the other")]
     public void StrongerDamageSetsThePace()

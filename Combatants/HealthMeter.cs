@@ -18,10 +18,6 @@ namespace Combatants
     public class HealthMeter<T> : RateManagedMeter<T, int> where T : INumber<T>
     {
         /// <summary>
-        /// The lowest that Defense can count as, so that damage can't explode as a debuffed Defense gets close to 0.
-        /// </summary>
-        public static readonly Rational<long> MinDefense = BattleTuning.MinDefense; //The value is set in CoreMetrics' BattleTuning
-        /// <summary>
         /// The Defense stat that damage is divided by, with whatever buffs and debuffs are on it.
         /// </summary>
         public StatModificationMeter<T> Defense { get; }
@@ -137,19 +133,19 @@ namespace Combatants
 
         #region Defense
         /// <summary>
-        /// What instant damage is divided by: the Defense stat with its buffs and debuffs, and never less than MinDefense.
+        /// What instant damage is divided by: the Defense stat with its buffs and debuffs, and never less than BattleTuning.MinDefense.
         /// </summary>
         public Rational<long> BaseDefense
         {
             get
             {
                 Rational<long> defense = Defense.GetModifiedStat();
-                return RationalConversion.Compare(defense, MinDefense) < 0 ? MinDefense : defense;
+                return RationalConversion.Compare(defense, BattleTuning.MinDefense) < 0 ? BattleTuning.MinDefense : defense;
             }
         }
         /// <summary>
         /// What damage over time is divided by: the Defense stat plus the Guard stat (unless there is no Guard or it is Broken),
-        /// then the Defense's buffs and debuffs, and never less than MinDefense.
+        /// then the Defense's buffs and debuffs, and never less than BattleTuning.MinDefense.
         /// </summary>
         /// <remarks>The buffs and debuffs come after the Guard is added, so they count the same whether the Guard is up or Broken.</remarks>
         public Rational<long> EffectiveDefense
@@ -162,7 +158,7 @@ namespace Combatants
                 }
                 Rational<long> defense = RationalConversion.LimitDenominator(
                     (new Rational<Int128>(Defense.BaseStat, Int128.One) + RationalConversion.Widen(GuardStat)) * RationalConversion.Widen(Defense.GetMultiplier()));
-                return RationalConversion.Compare(defense, MinDefense) < 0 ? MinDefense : defense;
+                return RationalConversion.Compare(defense, BattleTuning.MinDefense) < 0 ? BattleTuning.MinDefense : defense;
             }
         }
         /// <summary>

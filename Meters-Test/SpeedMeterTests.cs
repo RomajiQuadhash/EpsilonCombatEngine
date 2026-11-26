@@ -83,11 +83,11 @@ public class SpeedMeterTests
         MaxStatAggregator<int, SpeedMeter<int>> aggregator = new();
         _ = new SpeedMeter<int>(timeline, 100, new Rational<long>(-2), new Rational<long>(2), aggregator);
         SpeedMeter<int> exactlyAtTheCap = new(timeline, 100, new Rational<long>(-2), new Rational<long>(2), aggregator);
-        exactlyAtTheCap.AddInstantChange(-SpeedMeter<int>.MaxDelayMagnitude + 1); //A MaxDelayMagnitude of 100
+        exactlyAtTheCap.AddInstantChange(-BattleTuning.MaxDelayMagnitude + 1); //A MaxDelayMagnitude of 100
         SpeedMeter<int> verySlow = new(timeline, 1, new Rational<long>(-2), new Rational<long>(2), aggregator);
 
-        Assert.Equal(SpeedMeter<int>.MaxDelayMagnitude, exactlyAtTheCap.DelayMultiplier);
-        Assert.Equal(SpeedMeter<int>.MaxDelayMagnitude, verySlow.DelayMultiplier);
+        Assert.Equal(BattleTuning.MaxDelayMagnitude, exactlyAtTheCap.DelayMultiplier);
+        Assert.Equal(BattleTuning.MaxDelayMagnitude, verySlow.DelayMultiplier);
         Assert.Equal(new Rational<long>(1, 100), verySlow.SpeedFraction); //The fraction itself isn't capped
     }
     [Fact(DisplayName = "Buffing the fastest meter slows everyone else's speed fraction")]
@@ -102,7 +102,7 @@ public class SpeedMeterTests
         fast.AddInstantChange(Rational<long>.One); //Now 40
 
         Assert.Equal(new Rational<long>(1, 4), slower.SpeedFraction);
-        Assert.Equal(SpeedMeter<int>.MaxDelayMagnitude, slower.DelayMultiplier); //Would be 4, but it is capped
+        Assert.Equal(BattleTuning.MaxDelayMagnitude, slower.DelayMultiplier); //Would be 4, but it is capped
     }
     [Fact(DisplayName = "A meter that overtakes the fastest becomes the one the others are measured against")]
     public void OvertakingBecomesTheMeasure()

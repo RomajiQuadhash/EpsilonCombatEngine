@@ -47,17 +47,14 @@ namespace Meters
             SpeedAggregator.Meters.Add(this);
         }
         /// <summary>
-        /// How many times larger than the delay at max speed can the delay be? 
-        /// </summary>
-        public static readonly Rational<long> MaxDelayMagnitude = BattleTuning.MaxDelayMagnitude; //The value is set in CoreMetrics' BattleTuning
-        /// <summary>
         /// This speed/max speed. Never use the raw speed value for delay calculations, instead only this fraction
         /// </summary>
         public Rational<long> SpeedFraction { get => GetModifiedStat() / SpeedAggregator.GetMaximum(); }
         /// <summary>
-        /// One over SpeedFraction, maxed out at MaxDelayMagnitude. This effectively means SF below 1/MaxDelayMagnitude are all the same
+        /// One over SpeedFraction, maxed out at BattleTuning.MaxDelayMagnitude (how many times larger than the delay at max speed the delay can be).
+        /// This effectively means SF below 1/MaxDelayMagnitude are all the same
         /// </summary>
-        public Rational<long> DelayMultiplier { get =>Rational<long>.MinMagnitude(SpeedAggregator.GetMaximum()/GetModifiedStat(),MaxDelayMagnitude); }
+        public Rational<long> DelayMultiplier { get =>Rational<long>.MinMagnitude(SpeedAggregator.GetMaximum()/GetModifiedStat(),BattleTuning.MaxDelayMagnitude); }
 
         public override object Clone(CloneContext context)
         {
