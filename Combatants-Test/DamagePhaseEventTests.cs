@@ -73,6 +73,45 @@ public class DamagePhaseEventTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new DamagePhaseEvent<int>(health, new ModInstance<int, int>(0, 5), 1, 10, PriorityRank.DamagePhaseStart, PriorityRank.DamagePhaseEnd, timeline));
         Assert.Throws<ArgumentOutOfRangeException>(() => new DamagePhaseEvent<int>(health, new ModInstance<int, int>(-100, 5), 1, 10, PriorityRank.DamagePhaseStart, PriorityRank.DamagePhaseEnd, timeline));
     }
+    [Fact(DisplayName = "A damage phase on a health meter with a Guard chips the Guard when it starts and lets it heal back after it ends, with nothing else needed")]
+    public void ChipsAndHealsTheGuardByItself()
+    {
+        double scale = (double)BattleTuning.GuardScale.Numerator / BattleTuning.GuardScale.Denominator;
+        int healTime = (int)(BattleTuning.GuardHealDuration.Numerator / BattleTuning.GuardHealDuration.Denominator);
+        Timeline<int> timeline = new();
+        StatModificationMeter<int> defense = new(timeline, 10, new Rational<long>(-6), new Rational<long>(6));
+        StatModificationMeter<int> guardStrength = new(timeline, 10, new Rational<long>(-6), new Rational<long>(6));
+        LinearContinuousMeter<int, double> guard = new(timeline, 10, 0, 10);
+        HealthMeter<int> health = new(timeline, 1000, 0, 1000, defense, new ModifierGroupCounter(), guard, guardStrength);
+        //Runs from 1 to 11 at a rate of 4 before Defense
+        DamagePhaseEvent<int> damagePhase = new(health, new ModInstance<int, int>(20, 5), 1, 10, PriorityRank.DamagePhaseStart, PriorityRank.DamagePhaseEnd, timeline);
+        timeline.AddEvent(damagePhase);
+        Card<int, string> during = new(5, timeline, PriorityRank.None);
+        timeline.AddEvent(during);
+        Card<int, string> afterHeal = new(12 + healTime, timeline, PriorityRank.None);
+        timeline.AddEvent(afterHeal);
+        MostRecentEventHolder<int> reached = new();
+        during.Occurring += reached.OnTrigger;
+        afterHeal.Occurring += reached.OnTrigger;
+
+        Assert.Equal(10, guard.CurrentValue);
+        while (!ReferenceEquals(reached.MostRecentEvent, during))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+        Assert.Equal(10 - 4 * scale, guard.CurrentValue, 9);
+
+        while (!ReferenceEquals(reached.MostRecentEvent, afterHeal))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+        Assert.True(damagePhase.IsFinished);
+        Assert.Equal(10, guard.CurrentValue, 9);
+        //4 over a Defense of 20 for 10 is 2
+        Assert.Equal(998, health.CurrentValue);
+    }
     [Fact(DisplayName = "Damage that doesn't divide evenly by the Defense is still dealt exactly over the damage phase, with nothing left owed")]
     public void UnevenDamageIsDealtExactly()
     {
