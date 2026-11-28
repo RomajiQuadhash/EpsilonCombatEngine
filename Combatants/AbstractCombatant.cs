@@ -74,9 +74,15 @@ namespace Combatants
         //These are collections of properties that may or may not be needed stored in a standard way
 
         /// <summary>
-        /// What status effects are applying to this combatant. Note that they don't have durations, those are set by events adding and removing them
+        /// What status effects are applying to this combatant, and for each one, which combatant owns it (the one that put it there, or took it over).
+        /// The owner is null for an effect that nobody owns, such as one from the battle itself.
+        /// Note that they don't have durations, those are set by events adding and removing them
         /// </summary>
-        public abstract ISet<StatusEffects> StatusEffects { get; set; }
+        /// <remarks>
+        /// A combatant has each status effect at most once, which is why this is keyed by the effect: one that is already here can't be added again.
+        /// Taking an effect over means changing its owner, not adding a second one.
+        /// </remarks>
+        public abstract IDictionary<StatusEffects, AbstractCombatant<T>?> StatusEffects { get; set; }
         /// <summary>
         /// Additional elements represented by meters that others might look to modify
         /// </summary>

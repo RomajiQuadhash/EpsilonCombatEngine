@@ -85,8 +85,8 @@ public class BaseCombatantTests
         HealthMeter<int> health = new(timeline, 80, 0, 100, defense, new ModifierGroupCounter());
         BaseCombatant<int> combatant = new(health, new MaxStatAggregator<int, SpeedMeter<int>>(), 10, new Rational<long>(-6), new Rational<long>(6), PriorityRank.PlayerKO);
 
-        combatant.StatusEffects = new HashSet<StatusEffects> { StatusEffects.Sleep };
-        combatant.StatusEffects.Add(StatusEffects.Silence);
+        combatant.StatusEffects = new Dictionary<StatusEffects, AbstractCombatant<int>?> { [StatusEffects.Sleep] = combatant };
+        combatant.StatusEffects.Add(StatusEffects.Silence, null);
         combatant.ChangeableStats = new Dictionary<CombatStats, StatModificationMeter<int>>();
         combatant.AdditionalMeters = new Dictionary<MeterTypes, IMeter<int>> { [MeterTypes.MP] = defense };
         combatant.OnOccur(combatant, new BaseCard<int>(5, timeline));

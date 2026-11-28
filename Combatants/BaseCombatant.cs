@@ -150,7 +150,7 @@ namespace Combatants
         /// <summary>
         /// Not implemented in BaseCombatant: it has no status effects. Always empty, made new each time it is read, and setting it is ignored.
         /// </summary>
-        public override ISet<StatusEffects> StatusEffects { get => new HashSet<StatusEffects>(); set { } }
+        public override IDictionary<StatusEffects, AbstractCombatant<T>?> StatusEffects { get => new Dictionary<StatusEffects, AbstractCombatant<T>?>(); set { } }
         /// <summary>
         /// Not implemented in BaseCombatant: it takes no turns. Always null, and setting it is ignored.
         /// </summary>
