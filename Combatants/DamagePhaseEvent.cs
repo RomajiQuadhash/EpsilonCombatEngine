@@ -62,6 +62,10 @@ namespace Combatants
         /// How much longer it would have waited before starting when it was ended early. 0 if it had already started, or wasn't ended early.
         /// </summary>
         public T WaitLeftWhenEnded { get; private set; } = T.Zero;
+        /// <summary>
+        /// True between Suppress and Unsuppress. The damage phase carries on counting down as usual, but its damage is kept off the health meter.
+        /// </summary>
+        public bool IsSuppressed { get; private set; }
 
         protected override void ApplyChange()
         {
@@ -69,6 +73,11 @@ namespace Combatants
             {
                 //Ended before it started, so it never adds its damage. It is removed straight away, which finishes it.
                 TimeToEvent = T.Zero;
+                return;
+            }
+            if (IsSuppressed)
+            {
+                //It has started, but deals nothing until it is unsuppressed
                 return;
             }
             Key = MeterAppliedTo.AddDamage(Damage);
@@ -112,6 +121,37 @@ namespace Combatants
             return TimeLeftWhenEnded;
         }
         /// <summary>
+        /// Keeps this damage phase's damage off the health meter until Unsuppress is called, for when whoever is dealing it can't deal damage for a while (they have been nullified, say).
+        /// Unlike ending it early, nothing waits: the damage phase keeps to its own times, so whatever it would have dealt while suppressed is lost.
+        /// If the damage was on the health meter it comes off at once, exactly as if the phase had ended.
+        /// </summary>
+        public void Suppress()
+        {
+            if (IsSuppressed || IsFinished || HasEndedEarly)
+            {
+                return;
+            }
+            IsSuppressed = true;
+            RemoveChange();
+            Key = null;
+        }
+        /// <summary>
+        /// Lets this damage phase deal its damage again. If it has started and not yet ended, the damage goes back onto the health meter as a new source
+        /// for whatever is left of its time. If it hasn't started yet it starts as usual, and if it has ended there is nothing to put back.
+        /// </summary>
+        public void Unsuppress()
+        {
+            if (!IsSuppressed)
+            {
+                return;
+            }
+            IsSuppressed = false;
+            if (LifeCyclePhase == ApplyOrRemove.Remove && !IsFinished && !HasEndedEarly)
+            {
+                Key = MeterAppliedTo.AddDamage(Damage);
+            }
+        }
+        /// <summary>
         /// Makes a damage phase that deals the same damage to the same health for the time this one had left when it was ended early.
         /// It is a new damage phase in every way: when it starts, the damage goes onto the health meter as a new source.
         /// </summary>
@@ -145,6 +185,7 @@ namespace Combatants
                 damageClone.HasEndedEarly = HasEndedEarly;
                 damageClone.TimeLeftWhenEnded = TimeLeftWhenEnded;
                 damageClone.WaitLeftWhenEnded = WaitLeftWhenEnded;
+                damageClone.IsSuppressed = IsSuppressed;
                 return;
             }
             throw new UnrecoverableCloneException("Somehow, we cloned a DamagePhaseEvent and got a different type back. This should never happen.");
