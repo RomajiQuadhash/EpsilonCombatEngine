@@ -136,6 +136,107 @@ public class DamagePhaseEventTests
         Assert.True(damagePhase.IsFinished);
         Assert.Equal(0, health.MidAdvanceRateChanges);
     }
+    [Fact(DisplayName = "A damage phase ended early takes its damage off the health at once and says how much time it had left, and its continuation deals the rest later")]
+    public void EndedEarlyAndContinued()
+    {
+        Timeline<int> timeline = new();
+        StatModificationMeter<int> defense = new(timeline, 10, new Rational<long>(-6), new Rational<long>(6));
+        HealthMeter<int> health = new(timeline, 1000, 0, 1000, defense, new ModifierGroupCounter());
+        //Runs from 1 to 21, at 10 a tick
+        DamagePhaseEvent<int> damagePhase = new(health, new ModInstance<int, int>(100, 5), 1, 20, PriorityRank.DamagePhaseStart, PriorityRank.DamagePhaseEnd, timeline);
+        timeline.AddEvent(damagePhase);
+        Card<int, string> endAt = new(8, timeline, PriorityRank.None);
+        timeline.AddEvent(endAt);
+        Card<int, string> justAfter = new(9, timeline, PriorityRank.None);
+        timeline.AddEvent(justAfter);
+        Card<int, string> longAfter = new(40, timeline, PriorityRank.None);
+        timeline.AddEvent(longAfter);
+        MostRecentEventHolder<int> reached = new();
+        endAt.Occurring += reached.OnTrigger;
+        justAfter.Occurring += reached.OnTrigger;
+        longAfter.Occurring += reached.OnTrigger;
+        Assert.Throws<InvalidOperationException>(() => damagePhase.CreateContinuation(3));
+
+        while (!ReferenceEquals(reached.MostRecentEvent, endAt))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+        Assert.Single(health.DamageModifiers);
+
+        Assert.Equal(13, damagePhase.EndEarly());
+
+        Assert.True(damagePhase.HasEndedEarly);
+        Assert.Equal(13, damagePhase.TimeLeftWhenEnded);
+        Assert.Equal(0, damagePhase.WaitLeftWhenEnded);
+        Assert.Empty(health.DamageModifiers);
+        Assert.Equal(13, damagePhase.EndEarly());
+
+        while (!ReferenceEquals(reached.MostRecentEvent, justAfter))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+        Assert.True(damagePhase.IsFinished);
+
+        //Starts again at 12 and runs the 13 that were left, to 25
+        DamagePhaseEvent<int> continuation = damagePhase.CreateContinuation(3);
+        timeline.AddEvent(continuation);
+        Assert.Same(health, continuation.MeterAppliedTo);
+        Assert.Equal(new ModInstance<int, int>(100, 5), continuation.Damage);
+        Assert.Equal(13, continuation.ApplyTime);
+        Assert.Equal(PriorityRank.DamagePhaseStart, continuation.ApplyPriority);
+        Assert.Equal(PriorityRank.DamagePhaseEnd, continuation.RemovePriority);
+
+        while (!ReferenceEquals(reached.MostRecentEvent, longAfter))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+        Assert.True(continuation.IsFinished);
+        Assert.Empty(health.DamageModifiers);
+        //Ticks at 6 and 11 from the first part (the tick in progress at 8 still landed), and at 17, 22 and 27 from the second (the same at 25)
+        Assert.Equal(950, health.CurrentValue);
+        Assert.Equal(0, health.MidAdvanceRateChanges);
+    }
+    [Fact(DisplayName = "A damage phase ended early before it started never deals any damage, and says how long it still had to wait and to run")]
+    public void EndedEarlyBeforeItStarted()
+    {
+        Timeline<int> timeline = new();
+        StatModificationMeter<int> defense = new(timeline, 10, new Rational<long>(-6), new Rational<long>(6));
+        HealthMeter<int> health = new(timeline, 1000, 0, 1000, defense, new ModifierGroupCounter());
+        //Would run from 5 to 25
+        DamagePhaseEvent<int> damagePhase = new(health, new ModInstance<int, int>(100, 5), 5, 20, PriorityRank.DamagePhaseStart, PriorityRank.DamagePhaseEnd, timeline);
+        timeline.AddEvent(damagePhase);
+        Card<int, string> endAt = new(2, timeline, PriorityRank.None);
+        timeline.AddEvent(endAt);
+        Card<int, string> longAfter = new(40, timeline, PriorityRank.None);
+        timeline.AddEvent(longAfter);
+        MostRecentEventHolder<int> reached = new();
+        endAt.Occurring += reached.OnTrigger;
+        longAfter.Occurring += reached.OnTrigger;
+        while (!ReferenceEquals(reached.MostRecentEvent, endAt))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+
+        Assert.Equal(20, damagePhase.EndEarly());
+
+        Assert.Equal(20, damagePhase.TimeLeftWhenEnded);
+        Assert.Equal(3, damagePhase.WaitLeftWhenEnded);
+        Assert.Equal(20, damagePhase.CreateContinuation(1).ApplyTime);
+
+        while (!ReferenceEquals(reached.MostRecentEvent, longAfter))
+        {
+            foreach (StepReport<int> _ in timeline.TakeSteps()) { }
+            timeline.SetOpen();
+        }
+        Assert.True(damagePhase.IsFinished);
+        Assert.Null(damagePhase.Key);
+        Assert.Empty(health.DamageModifiers);
+        Assert.Equal(1000, health.CurrentValue);
+    }
     [Fact(DisplayName = "A damage phase cloned partway through ends on the cloned health meter, and leaves the original's damage alone")]
     public void CloneEndsOnTheClonedMeter()
     {

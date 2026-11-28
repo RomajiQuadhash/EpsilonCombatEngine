@@ -50,9 +50,27 @@ namespace Combatants
         /// The key the meter gave for the damage when this applied, which is what removes it again. Null until it applies.
         /// </summary>
         public ModifierKey? Key { get; private set; }
+        /// <summary>
+        /// True once EndEarly has been called. The damage is off the meter, or was never put on it.
+        /// </summary>
+        public bool HasEndedEarly { get; private set; }
+        /// <summary>
+        /// How much longer the damage would have kept coming when it was ended early: all of its apply time if it hadn't started yet. 0 unless it was ended early.
+        /// </summary>
+        public T TimeLeftWhenEnded { get; private set; } = T.Zero;
+        /// <summary>
+        /// How much longer it would have waited before starting when it was ended early. 0 if it had already started, or wasn't ended early.
+        /// </summary>
+        public T WaitLeftWhenEnded { get; private set; } = T.Zero;
 
         protected override void ApplyChange()
         {
+            if (HasEndedEarly)
+            {
+                //Ended before it started, so it never adds its damage. It is removed straight away, which finishes it.
+                TimeToEvent = T.Zero;
+                return;
+            }
             Key = MeterAppliedTo.AddDamage(Damage);
         }
         protected override void RemoveChange()
@@ -61,6 +79,57 @@ namespace Combatants
             {
                 MeterAppliedTo.RemoveDamage(key);
             }
+        }
+        /// <summary>
+        /// Stops this damage phase now, for when whoever is dealing it can't carry on (they have been paused, say).
+        /// If the damage was on the health meter it comes off at once, exactly as if the phase had ended by itself, and if it hadn't started it never does.
+        /// CreateContinuation makes a damage phase for the time that was left.
+        /// </summary>
+        /// <remarks>
+        /// An event can't always be taken off the timeline right away. So this one stays on it with no time left, and occurs the next time the timeline runs, doing nothing.
+        /// It isn't finished (IsFinished) until then.
+        /// </remarks>
+        /// <returns>How much longer the damage would have kept coming, which is also TimeLeftWhenEnded. 0 if it had already finished</returns>
+        public T EndEarly()
+        {
+            if (IsFinished || HasEndedEarly)
+            {
+                return TimeLeftWhenEnded;
+            }
+            HasEndedEarly = true;
+            if (LifeCyclePhase == ApplyOrRemove.Apply)
+            {
+                TimeLeftWhenEnded = ApplyTime;
+                WaitLeftWhenEnded = TimeToEvent;
+            }
+            else
+            {
+                TimeLeftWhenEnded = TimeToEvent;
+                RemoveChange();
+                Key = null; //So that occurring later doesn't try to take the damage off again
+            }
+            TimeToEvent = T.Zero;
+            return TimeLeftWhenEnded;
+        }
+        /// <summary>
+        /// Makes a damage phase that deals the same damage to the same health for the time this one had left when it was ended early.
+        /// It is a new damage phase in every way: when it starts, the damage goes onto the health meter as a new source.
+        /// </summary>
+        /// <remarks>Like other events, it isn't put on the timeline. Use AddEvent or AddPossibleEvent once it is made.</remarks>
+        /// <param name="waitingTime">How long from now until the damage starts again</param>
+        /// <returns>The new damage phase</returns>
+        /// <exception cref="InvalidOperationException">If this wasn't ended early, or it had no time left when it was</exception>
+        public virtual DamagePhaseEvent<T> CreateContinuation(T waitingTime)
+        {
+            if (!HasEndedEarly)
+            {
+                throw new InvalidOperationException("Only a damage phase that was ended early has anything to continue");
+            }
+            if (TimeLeftWhenEnded <= T.Zero)
+            {
+                throw new InvalidOperationException("This damage phase had no time left when it was ended early, so there is nothing to continue");
+            }
+            return new DamagePhaseEvent<T>(MeterAppliedTo, Damage, waitingTime, TimeLeftWhenEnded, ApplyPriority, RemovePriority, OwningTimeline);
         }
         protected override TimedTempChange<T, int> CreateEmptyForClone(Timeline<T> owningTimeline, CloneContext context)
         {
@@ -73,6 +142,9 @@ namespace Combatants
             {
                 //The cloned meter has the same damage under the same keys, so the key works on it as it is
                 damageClone.Key = Key;
+                damageClone.HasEndedEarly = HasEndedEarly;
+                damageClone.TimeLeftWhenEnded = TimeLeftWhenEnded;
+                damageClone.WaitLeftWhenEnded = WaitLeftWhenEnded;
                 return;
             }
             throw new UnrecoverableCloneException("Somehow, we cloned a DamagePhaseEvent and got a different type back. This should never happen.");
