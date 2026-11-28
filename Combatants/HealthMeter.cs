@@ -613,16 +613,16 @@ namespace Combatants
         /// <param name="magnitude">The damage as it is before Defense. 0 or more</param>
         /// <returns>How much health was actually lost, which is less than the damage if the minimum was reached</returns>
         /// <exception cref="ArgumentOutOfRangeException">If magnitude is negative</exception>
+        /// <exception cref="OverflowException">If the damage after Defense can't be stored exactly. Nothing is changed in that case</exception>
         public int ApplyInstantDamage(Rational<long> magnitude)
         {
             if (magnitude.Numerator < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(magnitude), magnitude, "Instant damage can't be negative");
             }
-            Rational<Int128> exact = RationalConversion.Widen(magnitude) / RationalConversion.Widen(BaseDefense);
-            Int128 roundedUp = (exact.Numerator + exact.Denominator - Int128.One) / exact.Denominator;
+            Rational<long> exact = RationalConversion.NarrowExact(RationalConversion.Widen(magnitude) / RationalConversion.Widen(BaseDefense));
             int before = CurrentValue;
-            AddInstantChange(-int.CreateChecked(roundedUp));
+            AddInstantChange(-RationalConversion.FromRational<int>(exact, FractionRounding.AtLeast));
             return before - CurrentValue;
         }
         #endregion
