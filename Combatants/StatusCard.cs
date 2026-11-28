@@ -20,6 +20,7 @@ namespace Combatants
         public AbstractCombatant<T>? Owner { get; private set; }
         public ApplyOrRemove LifeCyclePhase { get; private set; } = ApplyOrRemove.Apply;
         public bool IsFinished { get; private set; }
+        public bool IsCancelled { get; private set; }
         public Okazo<T> AsOkazo => this;
         /// <summary>
         /// How long the status stays, from when it is applied until it is removed.
@@ -99,8 +100,18 @@ namespace Combatants
             InvokeOccurring();
             LifeCyclePhase = ApplyOrRemove.Remove;
             Priority = RemovePriority;
-            TimeToEvent = ApplyTime;
+            //If it was cancelled while applying (refused, say), it doesn't wait out its apply time before finishing
+            TimeToEvent = IsCancelled ? T.Zero : ApplyTime;
             OwningTimeline.AddPossibleEvent(this);
+        }
+        public void Cancel()
+        {
+            if (IsFinished)
+            {
+                return;
+            }
+            IsCancelled = true;
+            TimeToEvent = T.Zero;
         }
         protected override BaseCard<T> CreateEmptyForClone(T timeToEvent, Timeline<T> owningTimeline)
         {
@@ -118,6 +129,7 @@ namespace Combatants
                 statusClone.LifeCyclePhase = LifeCyclePhase;
                 statusClone.Priority = Priority;
                 statusClone.IsFinished = IsFinished;
+                statusClone.IsCancelled = IsCancelled;
                 if (IsFinished)
                 {
                     //A finished one stopped listening to the timeline, and making the clone started it listening again.

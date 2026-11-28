@@ -22,6 +22,7 @@ namespace Combatants
         public AbstractCombatant<T>? Owner { get; private set; }
         public ApplyOrRemove LifeCyclePhase { get; private set; } = ApplyOrRemove.Apply;
         public bool IsFinished { get; private set; }
+        public bool IsCancelled { get; private set; }
         public Okazo<T> AsOkazo => this;
         /// <summary>
         /// How long until the status is applied. Only counts down, and only means anything, while this is waiting to apply.
@@ -80,7 +81,18 @@ namespace Combatants
         }
         protected override TimeOrNever<T> ComputeTimeRemaining()
         {
+            if (IsCancelled)
+            {
+                return new(false); //Nothing left to wait for, so it occurs as soon as the timeline runs and is finished
+            }
             return LifeCyclePhase == ApplyOrRemove.Apply ? new(TimeToApply) : base.ComputeTimeRemaining();
+        }
+        public void Cancel()
+        {
+            if (!IsFinished)
+            {
+                IsCancelled = true;
+            }
         }
         /// <summary>
         /// Nothing about the meter decides when the status is applied, so there is no transition data until it is waiting to remove.
@@ -93,9 +105,11 @@ namespace Combatants
         /// <exception cref="InvalidOperationException">If the time isn't zero</exception>
         public override void Trigger()
         {
-            if (LifeCyclePhase == ApplyOrRemove.Remove)
+            if (LifeCyclePhase == ApplyOrRemove.Remove || IsCancelled)
             {
+                //A cancelled one finishes the first time it occurs, whichever of the two that would have been
                 base.Trigger();
+                LifeCyclePhase = ApplyOrRemove.Remove;
                 IsFinished = true;
                 return;
             }
@@ -130,6 +144,7 @@ namespace Combatants
                 statusClone.LifeCyclePhase = LifeCyclePhase;
                 statusClone.SettablePriority = SettablePriority;
                 statusClone.IsFinished = IsFinished;
+                statusClone.IsCancelled = IsCancelled;
                 return;
             }
             throw new UnrecoverableCloneException("Somehow, we cloned a StatusDiscreteThresholdEvent and got a different type back. This should never happen.");

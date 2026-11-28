@@ -39,6 +39,18 @@ namespace Combatants
         /// </summary>
         bool IsFinished { get; }
         /// <summary>
+        /// True once Cancel has been called. A cancelled status event applies and removes nothing, and whoever it tells should take no notice of it.
+        /// </summary>
+        bool IsCancelled { get; }
+        /// <summary>
+        /// Stops this from applying or removing its status, for when the combatant it is for refuses it (it already has that status) or everything on that combatant is being cleared.
+        /// </summary>
+        /// <remarks>
+        /// An event can't always be taken off the timeline right away. So it is left with no time to wait, occurs the next time the timeline runs, and is finished.
+        /// It still tells its listeners when it occurs. IsCancelled is how they know to take no notice.
+        /// </remarks>
+        void Cancel();
+        /// <summary>
         /// This same event as an Okazo, which is what the timeline's AddEvent and AddPossibleEvent take.
         /// </summary>
         Okazo<T> AsOkazo { get; }
