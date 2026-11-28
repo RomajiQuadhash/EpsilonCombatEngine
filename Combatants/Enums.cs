@@ -7,7 +7,6 @@
     {
         MP, // Generic magic/mental points resource. Called MP rather than Mana so it stays neutral across settings (magic points, mental points, etc.)
         Guard, // This meter determines if the Guard stat should be applied along with Defense. Any DOT should subtract from this value when it starts, then return to the prior level after the DOT ends "gradually" (define a constant for how long the heal should take). If the value is at 0, the guard is Staggered. If a new DOT starts while the guard is Staggered, it Breaks the guard (set the min to "negative infinity") and deals full damage. Once the guard climbs back above 0, set the minimum back to 0 and the break ends. This should exist on all but test combatants probably
-        IncomingDamage, // Might not be needed but it could be useful to split this off from Health, to make health a simpler meter and just use stat/guard changes and this to change the HP drain. Or maybe this will be merged into the HP meter, possibly with guard
 
         //Player Only
         Vibe, //controls when a set of actions can be taken, represents a mood
