@@ -42,5 +42,10 @@ namespace CoreMetrics
         /// Small and positive, not 0: a Guard at exactly 0 with its floor back is Staggered, and a meter that should come back to 0 can land a hair above it.
         /// </summary>
         public static readonly Rational<long> GuardRestoreThreshold = new(1, 1_000_000);
+        /// <summary>
+        /// How far below 0 a bleeding combatant's health can go before it dies, as a fraction of its maximum health. Read by combatants that can bleed.
+        /// Provisional: a tenth isn't a final design choice.
+        /// </summary>
+        public static readonly Rational<long> BleedLimit = new(1, 10);
     }
 }

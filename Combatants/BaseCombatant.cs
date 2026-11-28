@@ -40,7 +40,7 @@ namespace Combatants
         /// <summary>
         /// Whether the combatant is up, knocked out or dead.
         /// </summary>
-        public CombatantState State { get; private set; } = CombatantState.Up;
+        public CombatantState State { get; protected set; } = CombatantState.Up;
         /// <summary>
         /// The health this combatant counts as having: what the health meter says while it is up, and 0 while it is knocked out or dead.
         /// </summary>
@@ -66,7 +66,7 @@ namespace Combatants
         /// It occurs once. Reviving makes a new one.
         /// </summary>
         /// <remarks>Something that wants to know when this combatant is knocked out can listen to this, and to the new one after each revive.</remarks>
-        public DiscreteReachThresholdEvent<T, int>? PendingKnockOut { get; private set; }
+        public DiscreteReachThresholdEvent<T, int>? PendingKnockOut { get; protected set; }
 
         /// <summary>
         /// Creates a combatant that is up, makes its speed meter, and puts the event that will knock it out on the timeline.
@@ -184,7 +184,7 @@ namespace Combatants
         /// <summary>
         /// Puts the event for health falling to 0 on the timeline, with this combatant listening to it.
         /// </summary>
-        private void WatchForKnockOut()
+        protected void WatchForKnockOut()
         {
             //The health meter listens to this first, and stops time from changing it. Then this combatant notes that it is knocked out.
             PendingKnockOut = HealthMeter.CreateKnockOutEvent(0, KnockOutPriority);
@@ -195,7 +195,7 @@ namespace Combatants
         /// Stops caring about the pending knock out event, if there is one.
         /// It can't always be taken off the timeline right away, so it is told it can't occur and is no longer listened to.
         /// </summary>
-        private void DropPendingKnockOut()
+        protected void DropPendingKnockOut()
         {
             if (PendingKnockOut is null)
             {
@@ -218,13 +218,20 @@ namespace Combatants
             if (State == CombatantState.Up)
             {
                 State = CombatantState.KnockedOut;
+                OnKnockedOut();
             }
+        }
+        /// <summary>
+        /// Called once this combatant has just been knocked out, for a subclass that has more to do then. Does nothing here.
+        /// </summary>
+        protected virtual void OnKnockedOut()
+        {
         }
         /// <summary>
         /// Kills the combatant, whether it was up or knocked out. Its health counts as 0 from then on, time stops changing its health meter, and it can't be revived.
         /// </summary>
         /// <returns>True if it is now dead. False if it can't be killed, in which case nothing changes</returns>
-        public bool Kill()
+        public virtual bool Kill()
         {
             if (!CanBeKilled)
             {
@@ -246,7 +253,7 @@ namespace Combatants
         /// <param name="newHealth">The health to come back at. Must be more than 0 and no more than the health meter's maximum</param>
         /// <returns>True if it was revived. False if it wasn't knocked out (it is up, or it is dead), in which case nothing changes</returns>
         /// <exception cref="ArgumentOutOfRangeException">If newHealth is 0 or less, or above the health meter's maximum. Nothing is changed in that case</exception>
-        public bool Revive(int newHealth)
+        public virtual bool Revive(int newHealth)
         {
             if (newHealth <= 0 || newHealth > HealthMeter.MaxValue)
             {
