@@ -100,16 +100,24 @@ namespace Combatants
 
         #region Combat stats
         /// <summary>
-        /// The combat stats this combatant has, other than Speed, whichever of its parts holds them:
-        /// Defense (which the health meter divides damage by), and GuardStrength if the health meter was made with a Guard.
+        /// The combat stats this combatant has, whichever of its parts holds them:
+        /// Speed (the same meter the Speed property gives), Defense (which the health meter divides damage by),
+        /// and GuardStrength if the health meter was made with a Guard.
         /// Made new each time it is read, so adding to or removing from it changes nothing.
         /// </summary>
-        /// <remarks>Setting it is ignored. This combatant's stats are the ones its meters were made with.</remarks>
+        /// <remarks>
+        /// Setting it is ignored. This combatant's stats are the ones its meters were made with.
+        /// For anything about timing, use the Speed property and not the Speed entry here, which is only the raw speed.
+        /// </remarks>
         public override IDictionary<CombatStats, StatModificationMeter<T>> ChangeableStats
         {
             get
             {
-                Dictionary<CombatStats, StatModificationMeter<T>> stats = new() { [CombatStats.Defense] = HealthMeter.Defense };
+                Dictionary<CombatStats, StatModificationMeter<T>> stats = new()
+                {
+                    [CombatStats.Speed] = Speed,
+                    [CombatStats.Defense] = HealthMeter.Defense
+                };
                 if (HealthMeter.GuardStrength is not null)
                 {
                     stats[CombatStats.GuardStrength] = HealthMeter.GuardStrength;

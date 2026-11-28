@@ -88,8 +88,13 @@ namespace Combatants
         /// </summary>
         public abstract IDictionary<MeterTypes,IMeter<T>> AdditionalMeters { get; set; }
         /// <summary>
-        /// Stores the stats including their modifications, except speed (since everyone needs it and it has special properties)
+        /// Stores the stats including their modifications. Speed is in here too, as the same meter that the Speed property gives,
+        /// so that changing or showing "a stat" never has to treat Speed as a special case.
         /// </summary>
+        /// <remarks>
+        /// Use this to change or show a stat. For anything about timing, use the Speed property:
+        /// here Speed is only a stat meter, whose value is the raw speed, and delays must come from the speed fraction and never the raw speed.
+        /// </remarks>
         public abstract IDictionary<CombatStats,StatModificationMeter<T>> ChangeableStats {  get; set; }
         #endregion
 

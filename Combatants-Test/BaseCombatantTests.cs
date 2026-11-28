@@ -55,7 +55,7 @@ public class BaseCombatantTests
         Assert.Equal(new Rational<long>(1, 2), slow.Speed.SpeedFraction);
         Assert.Equal(Rational<long>.One, fast.Speed.SpeedFraction);
     }
-    [Fact(DisplayName = "A combatant shows the combat stats it has, whichever of its parts holds them: Defense always, and GuardStrength and the Guard meter if its health has a Guard")]
+    [Fact(DisplayName = "A combatant shows the combat stats it has, whichever of its parts holds them: Speed and Defense always, and GuardStrength and the Guard meter if its health has a Guard")]
     public void ShowsItsCombatStats()
     {
         Timeline<int> timeline = new();
@@ -68,12 +68,18 @@ public class BaseCombatantTests
         BaseCombatant<int> guarded = new(guardedHealth, new MaxStatAggregator<int, SpeedMeter<int>>(), 10, new Rational<long>(-6), new Rational<long>(6), PriorityRank.PlayerKO);
 
         Assert.Same(defense, combatant.ChangeableStats[CombatStats.Defense]);
-        Assert.Single(combatant.ChangeableStats);
+        Assert.Same(combatant.Speed, combatant.ChangeableStats[CombatStats.Speed]);
+        Assert.Equal(2, combatant.ChangeableStats.Count);
         Assert.Empty(combatant.AdditionalMeters);
 
         Assert.Same(guardedDefense, guarded.ChangeableStats[CombatStats.Defense]);
         Assert.Same(guardStrength, guarded.ChangeableStats[CombatStats.GuardStrength]);
-        Assert.Equal(2, guarded.ChangeableStats.Count);
+        Assert.Same(guarded.Speed, guarded.ChangeableStats[CombatStats.Speed]);
+        Assert.Equal(3, guarded.ChangeableStats.Count);
+
+        //A change made through the entry is a change to the combatant's speed
+        guarded.ChangeableStats[CombatStats.Speed].AddInstantChange(new Rational<long>(1));
+        Assert.Equal(new Rational<long>(20), guarded.Speed.GetModifiedStat());
         Assert.Same(guard, guarded.AdditionalMeters[MeterTypes.Guard]);
         Assert.Single(guarded.AdditionalMeters);
     }
