@@ -49,21 +49,9 @@ namespace Meters
             : base(owningMeter, thresholdPoint, priority, owningTimeline, instantFlag, allowNegative)
         {
         }
-        public override object Clone(CloneContext context)
+        protected override ReachThresholdEvent<T, M> CreateEmptyForClone(Timeline<T> owningTimeline, CloneContext context)
         {
-            if (context.TryGet(this, out DiscreteReachThresholdEvent<T, M> existing)) return existing;
-            if (!context.TryGet(OwningTimeline, out Timeline<T> clonedTimeline))
-                throw new UnrecoverableCloneException("Timeline must be cloned before its threshold event.");
-            LinearDiscreteMeter<T, M> clonedMeter = context.GetOrClone(OwningMeter);
-            DiscreteReachThresholdEvent<T,M> clone = new(clonedMeter,ThresholdPoint,Priority,clonedTimeline,_instantFlag, _allowNegative);
-            context.Register(this, clone);
-            
-            //Move other properties
-            clone.UUID=UUID;
-            clone.HaltsInstantAction=HaltsInstantAction;
-            clone.Direction=Direction;
-            clone.CouldOccur=CouldOccur;
-            return clone;
+            return new DiscreteReachThresholdEvent<T, M>(context.GetOrClone(OwningMeter), ThresholdPoint, Priority, owningTimeline, _instantFlag, _allowNegative);
         }
     }
 }

@@ -102,21 +102,41 @@ namespace Meters
             _allowNegative = false;
         }
 
+        /// <summary>
+        /// Standard clone method for a ReachThresholdEvent and subclasses. Subclasses override CreateEmptyForClone, and CopyPropertiesForClone if they have more to copy.
+        /// </summary>
+        /// <exception cref="UnrecoverableCloneException">Thrown when the owning timeline has not been cloned yet.</exception>
         public override object Clone(CloneContext context)
         {
             if (context.TryGet(this, out ReachThresholdEvent<T, M> existing)) return existing;
             if (!context.TryGet(OwningTimeline, out Timeline<T> clonedTimeline))
                 throw new UnrecoverableCloneException("Timeline must be cloned before its threshold event.");
-            AbstractMeter<T,M> clonedMeter = context.GetOrClone(OwningMeter);
-            ReachThresholdEvent<T,M> clone = new(clonedMeter,ThresholdPoint,Priority,clonedTimeline,_instantFlag, _allowNegative);
+            ReachThresholdEvent<T, M> clone = CreateEmptyForClone(clonedTimeline, context);
             context.Register(this, clone);
-            
-            //Move other properties
-            clone.UUID=UUID;
-            clone.HaltsInstantAction=HaltsInstantAction;
-            clone.Direction=Direction;
-            clone.CouldOccur=CouldOccur;
+            CopyPropertiesForClone(clone, context);
             return clone;
+        }
+        /// <summary>
+        /// Makes a new instance of this class for the cloned timeline, on the clone of the meter, with the threshold, the priority and the clone-only state this has.
+        /// A subclass overrides this to make one of itself with its own clone constructor.
+        /// </summary>
+        /// <param name="owningTimeline">The timeline that should own the clone</param>
+        /// <param name="context">The clone context, for getting the clone of the meter</param>
+        protected virtual ReachThresholdEvent<T, M> CreateEmptyForClone(Timeline<T> owningTimeline, CloneContext context)
+        {
+            return new ReachThresholdEvent<T, M>(context.GetOrClone(OwningMeter), ThresholdPoint, Priority, owningTimeline, _instantFlag, _allowNegative);
+        }
+        /// <summary>
+        /// Override this method (but always call base.CopyPropertiesForClone) in subclasses to copy any additional properties to the clone.
+        /// </summary>
+        /// <param name="clone">The new clone to modify. Already registered with the context</param>
+        /// <param name="context">The clone context, in case you need to clone or reference clones of any other objects</param>
+        protected virtual void CopyPropertiesForClone(ReachThresholdEvent<T, M> clone, CloneContext context)
+        {
+            clone.UUID = UUID;
+            clone.HaltsInstantAction = HaltsInstantAction;
+            clone.Direction = Direction;
+            clone.CouldOccur = CouldOccur;
         }
 
         public override void OnAdvance(object? sender, T timeElapsed)
