@@ -19,8 +19,8 @@ namespace Combatants
     public class StatusThresholdEvent<T, M> : ReachThresholdEvent<T, M>, IStatusEvent<T> where T : INumber<T> where M : INumber<M>
     {
         public StatusEffects Status { get; }
-        public AbstractCombatant<T> Target { get; }
-        public AbstractCombatant<T>? Owner { get; }
+        public AbstractCombatant<T> Target { get; private set; }
+        public AbstractCombatant<T>? Owner { get; private set; }
         public ApplyOrRemove LifeCyclePhase { get; private set; } = ApplyOrRemove.Apply;
         public bool IsFinished { get; private set; }
         public Okazo<T> AsOkazo => this;
@@ -114,8 +114,11 @@ namespace Combatants
         }
         protected override ReachThresholdEvent<T, M> CreateEmptyForClone(Timeline<T> owningTimeline, CloneContext context)
         {
-            //Rewiring is what makes the cloned target listen to it
-            return new StatusThresholdEvent<T, M>(context.GetOrClone(Target), Status, Owner is null ? null : context.GetOrClone(Owner), TimeToApply,
+            //The combatants are not cloned here. They are swapped in by CopyPropertiesForClone, once this clone is registered.
+            //A combatant keeps hold of the events that are for it, so cloning one from here would have it ask for this event's clone before there is one,
+            //and a second clone of this event would get made.
+            //Rewiring is what makes the cloned target listen to it.
+            return new StatusThresholdEvent<T, M>(Target, Status, Owner, TimeToApply,
                 context.GetOrClone(OwningMeter), ThresholdPoint, ApplyPriority, RemovePriority, owningTimeline, _instantFlag, _allowNegative);
         }
         protected override void CopyPropertiesForClone(ReachThresholdEvent<T, M> clone, CloneContext context)
@@ -123,6 +126,8 @@ namespace Combatants
             base.CopyPropertiesForClone(clone, context);
             if (clone is StatusThresholdEvent<T, M> statusClone)
             {
+                statusClone.Target = context.GetOrClone(Target);
+                statusClone.Owner = Owner is null ? null : context.GetOrClone(Owner);
                 statusClone.LifeCyclePhase = LifeCyclePhase;
                 statusClone.SettablePriority = SettablePriority;
                 statusClone.IsFinished = IsFinished;
